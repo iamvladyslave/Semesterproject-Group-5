@@ -1,0 +1,19 @@
+dataset:
+  name: "GTSRB-Concepts"
+  train_dir: "data/GTSRB_FINAL_TRAIN/Final_Training/Images"
+  test_dir: "data/GTSRB_FINAL_TEST/Final_Test/Images"
+  concept_csv: "data/concepts_per_class.csv"
+  csv_label_col: "class_id"
+  image_exts: [".ppm", ".png"]
+  image_size: [224, 224]
+  val_split: 0.1
+  seed: 1923
+  num_conceptss: 43
+  concept_cols: null
+  folder_to_label: null
+
+dataloader:
+  batch_size: 64
+  num_workers: 4
+  shuffle: true
+  pin_memory: true

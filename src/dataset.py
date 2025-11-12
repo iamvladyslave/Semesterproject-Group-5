@@ -10,20 +10,20 @@ from PIL import Image
 
 class GTSRBConceptDataset(Dataset):
     """
-    GTSRB + Concept annotations Dataset.
+    GTSRB + Concept annotations Dataset
 
     Directory layout expected:
         root_dir/
           00000/  (class_id = 0)
             00000_00000.ppm
             ...
-            GT-00000.csv           # optional, used for ROI crop if present
+            GT-00000.csv
           00001/
             ...
           ...
           00042/
 
-    Concepts CSV (wide, per class), e.g.:
+    Concepts CSV (wide, per class);
         class_id,class_name,has_red_border,is_round,is_triangle,...
         0,Speed limit (20km/h),1,1,0,...
         ...
@@ -46,7 +46,7 @@ class GTSRBConceptDataset(Dataset):
         crop_with_roi: bool = True,
         concepts_class_col: str = "class_id",
         concepts_name_col: str = "class_name",
-        concept_columns: Optional[List[str]] = None,  # if None, infer all except class/name
+        concept_columns: Optional[List[str]] = None,
     ):
         self.root_dir = Path(root_dir)
         self.transform = transform
@@ -56,8 +56,6 @@ class GTSRBConceptDataset(Dataset):
         if not self.root_dir.exists():
             raise FileNotFoundError(f"root_dir not found: {self.root_dir}")
 
-        # ---------- 1) discover images & labels from folder names ----------
-        # class folders are numeric "00000" ... "00042"
         class_dirs = sorted([
             p for p in self.root_dir.rglob("[0-9][0-9][0-9][0-9][0-9]") if p.is_dir()
         ])
@@ -71,30 +69,27 @@ class GTSRBConceptDataset(Dataset):
             try:
                 class_id = int(cdir.name)
             except ValueError:
-                # ignore non-numeric folders
                 continue
             for img_path in cdir.iterdir():
                 if img_path.is_file() and img_path.suffix.lower() in self.image_exts:
                     samples.append((img_path, class_id))
 
+
         if not samples:
             raise RuntimeError(f"No images with extensions {self.image_exts} found under {self.root_dir}")
 
-        self.samples = sorted(samples, key=lambda t: (t[1], t[0].name))  # stable order
+        self.samples = sorted(samples, key=lambda t: (t[1], t[0].name))
         self.classes = sorted({lbl for _, lbl in self.samples})
-        self.class_to_idx = {c: c for c in self.classes}  # identity mapping (class_id == label)
+        self.class_to_idx = {c: c for c in self.classes}
 
-        # ---------- 2) (optional) load ROI maps for cropping ----------
-        # Build a dictionary: full image path -> (x1,y1,x2,y2)
+
         self._roi_by_path: Dict[Path, Tuple[int, int, int, int]] = {}
         if self.crop_with_roi:
             for cdir in class_dirs:
                 csvs = list(cdir.glob("*.csv"))
                 if not csvs:
                     continue
-                # GTSRB per-class csv usually named GT-00000.csv
                 df = pd.read_csv(csvs[0])
-                # expect a "Filename" column with the file names
                 if {"Filename", "Roi.X1", "Roi.Y1", "Roi.X2", "Roi.Y2"}.issubset(df.columns):
                     for _, row in df.iterrows():
                         roi_path = cdir / str(row["Filename"])
@@ -102,12 +97,10 @@ class GTSRBConceptDataset(Dataset):
                             x1, y1, x2, y2 = int(row["Roi.X1"]), int(row["Roi.Y1"]), int(row["Roi.X2"]), int(row["Roi.Y2"])
                             self._roi_by_path[roi_path] = (x1, y1, x2, y2)
 
-        # ---------- 3) load concept vectors (per class) ----------
         cdf = pd.read_csv(concepts_csv)
         if concepts_class_col not in cdf.columns:
             raise KeyError(f"Concepts CSV must have column '{concepts_class_col}'")
 
-        # choose / infer concept columns (order defines vector layout!)
         if concept_columns is None:
             drop = {concepts_class_col}
             if concepts_name_col in cdf.columns:
@@ -118,15 +111,13 @@ class GTSRBConceptDataset(Dataset):
         if self.num_concepts == 0:
             raise ValueError("No concept columns found. Pass concept_columns=... or check your CSV.")
 
-        # build mapping class_id -> binary vector
         self._concept_by_label: Dict[int, torch.Tensor] = {}
         for _, row in cdf.iterrows():
             cid = int(row[concepts_class_col])
             vec = torch.tensor([float(row[c]) for c in self.concept_columns], dtype=torch.float32)
-            vec = (vec > 0.5).float()  # ensure strictly binary 0/1
+            vec = (vec > 0.5).float()
             self._concept_by_label[cid] = vec
 
-        # sanity: all labels we will use exist in concept csv
         labels_in_split = {lbl for _, lbl in self.samples}
         missing = sorted([lbl for lbl in labels_in_split if lbl not in self._concept_by_label])
         if missing:
@@ -138,10 +129,8 @@ class GTSRBConceptDataset(Dataset):
     def __getitem__(self, idx: int):
         path, label = self.samples[idx]
 
-        # load image
         with Image.open(path) as im:
             im = im.convert("RGB")
-            # optional ROI crop
             roi = self._roi_by_path.get(path)
             if roi is not None:
                 x1, y1, x2, y2 = roi
@@ -150,8 +139,7 @@ class GTSRBConceptDataset(Dataset):
             if self.transform is not None:
                 image = self.transform(im)
             else:
-                # default ToTensor if user didn't provide one
-                image = torch.from_numpy(np.array(im)).permute(2, 0, 1).float() / 255.0  # fallback
+                image = torch.from_numpy(np.array(im)).permute(2, 0, 1).float() / 255.0
         concept_vec = self._concept_by_label[label]
         label_t = torch.tensor(label, dtype=torch.long)
         return image, (concept_vec, label_t)

@@ -1,11 +1,12 @@
 dataset:
   name: "GTSRB-Concepts"
-  train_dir: "data/GTSRB_FINAL_TRAIN/Final_Training/Images"
-  test_dir: "data/GTSRB_FINAL_TEST/Final_Test/Images"
-  concept_csv: "data/concepts_per_class.csv"
-  csv_label_col: "class_id"
+  root_dir: data/GTSRB_FINAL_TRAINING/Final_Training
+  train_csv: data/GTSRB_FINAL_TRAINING/Final_Training/train_index.val_csv
+  val_csv:   data/GTSRB_FINAL_TRAINING/Final_Training/val_index.csv
+  test_csv:  data/GTSRB_FINAL_TEST/GT-final_test.test.csv
+  concepts_csv: data/GTSRB_FINAL_TRAINING/concepts_per_class.val_csv
   image_exts: [".ppm", ".png"]
-  image_size: [224, 224]
+  image_size: 128
   val_split: 0.1
   seed: 1923
   num_conceptss: 43

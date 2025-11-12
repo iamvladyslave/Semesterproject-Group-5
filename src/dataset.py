@@ -42,7 +42,7 @@ class GTSRBConceptDataset(Dataset):
         concepts_csv: str | Path,
         *,
         transform=None,
-        image_exts: Tuple[str, ...] = (".ppm", ".png", ".jpg", ".jpeg", ".bmp"),
+        image_exts: Tuple[str, ...] = (".ppm"),
         crop_with_roi: bool = True,
         concepts_class_col: str = "class_id",
         concepts_name_col: str = "class_name",
@@ -61,7 +61,7 @@ class GTSRBConceptDataset(Dataset):
         ])
         if not class_dirs:
             raise RuntimeError(
-                f"No class folders like 00000..00042 under {self.root_dir} (checked recursively)"
+                f"No class folders under {self.root_dir} (checked recursively)"
             )
 
         samples: List[Tuple[Path, int]] = []

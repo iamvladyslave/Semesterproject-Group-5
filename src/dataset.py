@@ -42,7 +42,7 @@ class GTSRBConceptDataset(Dataset):
         concepts_csv: str | Path,
         *,
         transform=None,
-        image_exts: Tuple[str, ...] = (".ppm"),
+        image_exts: Tuple[str, ...] = (".ppm",),
         crop_with_roi: bool = True,
         concepts_class_col: str = "class_id",
         concepts_name_col: str = "class_name",

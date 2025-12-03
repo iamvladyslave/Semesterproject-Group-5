@@ -41,7 +41,7 @@ class Trainer:
                     self.optimizer.step()
 
                 #sigmoid activation
-                predicted = torch.sigmoid(logits > 0.5).float()
+                predicted = torch.sigmoid((logits) > 0.5).float()
                 #update total
                 total_loss += loss.item()
                 total_correct += (predicted == labels).sum().item()
@@ -58,11 +58,9 @@ class Trainer:
         for epoch in range(epochs):
             
             #training 
-            train_loss = self.train_epoch(self.train_loader, train=True)
-            train_acc = self.train_epoch(self.train_loader, train=True)
+            train_loss, train_acc = self.train_epoch(self.train_loader, train=True)
             #validation
-            val_loss = self.train_epoch(self.train_loader, train=False)
-            val_acc = self.train_epoch(self.val_loader, train=False)
+            val_loss, val_acc = self.train_epoch(self.val_loader, train=False)
 
             #history update
             self.history['train_loss'].append(train_loss)
@@ -70,7 +68,7 @@ class Trainer:
             self.history['train_acc'].append(train_acc)
             self.history['val_acc'].append(val_acc)
 
-            #print progress
+            #print progress for testing
             print(f"Epoch {epoch+1}/{epochs}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
 
             #save best model

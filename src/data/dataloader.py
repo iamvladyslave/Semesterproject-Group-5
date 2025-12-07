@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset as dataset 
 
-class Dataset_class(dataset):
+class dataloader(dataset):
 
     def __init__(self, data):
         #initialize dataset
@@ -12,10 +12,14 @@ class Dataset_class(dataset):
 
     def get_data(self,index):
         #Datenpunkt holen
-        item = self.data(index)
+        item = self.data[index]
         
         #Hier code schreiben um trainingsdaten einzulesen funktioniert noch nicht
         image = item['path']
+
+        #falls preprocessing vorhanden ist, anwenden
+        if self.preprocess:
+            image = self.preprocess.preprocess_image(image)
 
         #concepts und label in tensor umwandeln
         concepts = torch.tensor(item["concepts"], dtype=torch.float32)

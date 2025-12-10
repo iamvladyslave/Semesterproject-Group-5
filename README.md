@@ -17,4 +17,4 @@ Flags:
 
 Artifacts: model weights, training curves, and per-concept accuracy plots are written to `--save-dir`.
 
-Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes.
+Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes. (config/training_config.yaml)

@@ -1,7 +1,9 @@
 training:
   device: cuda
-  epochs: 200
+  epochs: 5
   learning_rate: 0.001
   weight_decay: 0.0001
+  patience: 10
+  min_delta: 0.0
 
   # use adam!

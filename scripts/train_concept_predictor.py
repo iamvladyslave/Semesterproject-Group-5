@@ -41,7 +41,7 @@ def build_dataloaders(cfg):
     val_split = dataset_cfg.get("val_split", 0.1)
     val_size = int(len(ds) * val_split)
     train_size = len(ds) - val_size
-    generator = torch.Generator().manual_seed(dataset_cfg.get("seed", 42))
+    generator = torch.Generator().manual_seed(dataset_cfg.get("seed", 1923))
     train_ds, val_ds = random_split(ds, [train_size, val_size], generator=generator)
 
     def make_loader(split_ds, shuffle):

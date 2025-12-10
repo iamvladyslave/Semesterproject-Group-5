@@ -1,6 +1,6 @@
 training:
   device: cuda
-  epochs: 5
+  epochs: 5               # set higher for real training
   learning_rate: 0.001
   weight_decay: 0.0001
   patience: 10

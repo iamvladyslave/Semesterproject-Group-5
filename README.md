@@ -16,3 +16,5 @@ Flags:
 - `--threshold` set sigmoid cutoff for concept predictions (default 0.5).
 
 Artifacts: model weights, training curves, and per-concept accuracy plots are written to `--save-dir`.
+
+Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes.

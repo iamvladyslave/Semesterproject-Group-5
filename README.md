@@ -14,17 +14,17 @@ Flags:
 - `--freeze-backbone` freeze backbone parameters (head only trainable).
 - `--backbone` choose EfficientNet variant (default `efficientnet_v2_s`).
 - `--threshold` set sigmoid cutoff for concept predictions (default 0.5).
-- `--epoch` set N amount of epochs (default 30). 
+- `--epoch` set N amount of epochs (default 30).
 
 Artifacts: model weights, training curves, and per-concept accuracy plots are written to `--save-dir`.
 
-~~Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes. (config/training_config.yaml)~~ 
+~~Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes. (config/training_config.yaml)~~
 Runs on Gruenau without issues, no full run done yet.
 
 ### TODO:
 
 - simplify script to run
-- conda environment for linux should be default (currently done through semproServer conda env)
+- **conda environment for linux should be default (currently done through semproServer conda env)**; this effectively means mac environment implementation is not useful anymore, MPS/CPU-only if-else case is to be taken out and shot.
 - clean clutter and irrelavant directories/files
 - ~~update gitignore, remove pycache etc.~~
 - start on task 3

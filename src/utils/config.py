@@ -1,12 +1,19 @@
 from dataclasses import dataclass
 from typing import Dict
 
-@dataclass 
+@dataclass
 class DatasetConfig:
-    train_dir: str
-    test_dir: str
-    concept_annotations: str
-    batch_size: int
-    num_workers: int
-    validation_split: float
-    
+    name: str
+    root_dir: str
+    train_csv: str | None = None
+    val_csv: str | None = None
+    test_csv: str | None = None
+    concepts_csv: str
+    image_exts: tuple[str, ...] = (".ppm",)
+    image_size: int = 128
+    val_split: float = 0.1
+    seed: int = 1923
+    num_concepts: int = 43
+    concept_cols: list[str] | None = None
+    folder_to_label: dict[int, int] | None = None
+

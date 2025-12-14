@@ -70,13 +70,10 @@ def main(args):
     )
     model = ConceptPredictor(num_concepts=num_concepts, backbone_cfg=backbone_cfg)
 
-    # Prefer Apple MPS on macOS, then CUDA, else CPU.
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-    elif torch.cuda.is_available():
-        device = torch.device(train_cfg["training"].get("device", "cuda"))
-    else:
-        device = torch.device("cpu")
+    #only CUDA; fail fast if unavailable
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA device is required but was not detected.")
+    device = torch.device(train_cfg["training"].get("device", "cuda"))
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=train_cfg["training"]["learning_rate"],

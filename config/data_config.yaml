@@ -9,7 +9,7 @@ dataset:
   image_size: 128
   val_split: 0.1
   seed: 1923
-  num_conceptss: 43
+  num_concepts: 43
   concept_cols: null
   folder_to_label: null
 

@@ -21,10 +21,16 @@ Artifacts: model weights, training curves, and per-concept accuracy plots are wr
 ~~Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes. (config/training_config.yaml)~~
 Runs on Gruenau without issues, no full run done yet.
 
-### TODO:
+### TODO: (from most to least important)
 
-- simplify script to run
+- currently random split for train/val!!! implement correct train/val/test split!!!
 - **conda environment for linux should be default (currently done through semproServer conda env)**; this effectively means mac environment implementation is not useful anymore, MPS/CPU-only if-else case is to be taken out and shot.
+- more visualization, more visualization.py
+- decide if artifacts should keep plots and visualization in repo (currently ignored gitignore)
+- fiddle with patience (at 10 meaning 10 consqutive epochs of no val_loss improvement) and min_delta (lower) values!
 - clean clutter and irrelavant directories/files
 - ~~update gitignore, remove pycache etc.~~
 - start on task 3
+- simplify script to run (task 4)
+- extend README for complete setup (task 4)
+- notebook with snippets for demo for final?

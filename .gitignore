@@ -1,2 +1,24 @@
-# mac
-**.DS_Store
+#mac specific
+.DS_Store
+
+#Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+#Virtual environments/editor settings
+.venv/
+venv/
+env/
+.env
+.idea/
+.vscode/
+
+#training artifacts and outputs (maybe allow pngs?)
+artifacts/
+*.pt
+*.pth
+*.onnx
+*.png
+*.pdf
+

@@ -19,6 +19,3 @@ artifacts/
 *.pt
 *.pth
 *.onnx
-*.png
-*.pdf
-

@@ -1,9 +1,11 @@
 training:
   device: cuda
-  epochs: 30               # set 30 or 40 for real training IS DEFAULT! use --epochs N as arg when running script to change!
+  epochs: 30               # set 30 for real training IS DEFAULT! use --epochs N as arg when running script to change!
   learning_rate: 0.001
   weight_decay: 0.0001
-  patience: 10
-  min_delta: 0.0
+  patience: 10             # maybe set to 5 with current results
+  min_delta: 0.0           # 0.0001?
 
-  # use adam!
+
+# look into two stage stopping
+# use adam!

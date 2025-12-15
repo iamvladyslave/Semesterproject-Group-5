@@ -15,7 +15,6 @@ env/
 .vscode/
 
 #training artifacts and outputs (maybe allow pngs?)
-artifacts/
 *.pt
 *.pth
 *.onnx

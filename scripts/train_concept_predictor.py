@@ -129,6 +129,7 @@ def main(args):
     targets = torch.cat(all_targets, dim=0)
     metrics = concept_metrics(logits, targets, threshold=args.threshold)
     print("Macro metrics:", metrics["macro"])
+    print(f"Exact-match accuracy: {metrics['macro']['exact_match']:.4f}")
 
     if args.save_dir:
         out_dir = Path(args.save_dir)

@@ -16,7 +16,9 @@ def plot_training_curves(history: Dict[str, List[float]], *, save_path: Optional
 
     ax[1].plot(history.get("train_acc", []), label="Train")
     ax[1].plot(history.get("val_acc", []), label="Val")
-    ax[1].set_title("Macro Concept Accuracy")
+    ax[1].plot(history.get("train_vec_acc", []), label="Train (exact-match)")
+    ax[1].plot(history.get("val_vec_acc", []), label="Val (exact-match)")
+    ax[1].set_title("Concept Accuracy")
     ax[1].set_xlabel("Epoch")
     ax[1].legend()
 

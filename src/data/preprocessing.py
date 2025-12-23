@@ -2,7 +2,7 @@ import torch
 from torchvision import transforms
 
 class Preprocessing:
-    def __init__(self, image_size=(224, 224)):
+    def __init__(self, image_size=(128, 128)):
         #initialize preprocessing with image size
         self.image_size = image_size
         #trangsformation for preprocessing

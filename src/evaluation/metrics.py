@@ -28,6 +28,7 @@ def concept_metrics(
 
     per_concept_acc = (preds == targets).float().mean(dim=0)
     tp, fp, fn = _counts(preds, targets)
+    exact_match = float((preds == targets).all(dim=1).float().mean().item())
 
     precision = tp.float() / (tp + fp + EPS)
     recall = tp.float() / (tp + fn + EPS)
@@ -38,6 +39,7 @@ def concept_metrics(
         "precision": float(precision.mean().item()),
         "recall": float(recall.mean().item()),
         "f1": float(f1.mean().item()),
+        "exact_match": exact_match,
     }
     return {
         "per_concept_accuracy": per_concept_acc.tolist(),
@@ -45,4 +47,5 @@ def concept_metrics(
         "per_concept_recall": recall.tolist(),
         "per_concept_f1": f1.tolist(),
         "macro": macro,
+        "exact_match": exact_match,
     }

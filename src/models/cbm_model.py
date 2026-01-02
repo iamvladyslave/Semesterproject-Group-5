@@ -1,4 +1,4 @@
-import pytorch
+import torch
 import torch.nn as nn
 
 class cbm_model(nn.Module):
@@ -23,7 +23,7 @@ class cbm_model(nn.Module):
             concepts = concept_probs
         #label prediction
         label_logits = self.label_predictor(concepts)
-    
+
         return label_logits, concept_probs, concepts
         
     

@@ -27,8 +27,8 @@ class LabelPredictor(nn.Module):
         return self.net(concepts)
 
 
-class cbm_model(nn.Module):
-    # CBM Model bestehend aus Concept Predictor und Label Predictor
+class CBMModel(nn.Module):
+    #CBM Model bestehend aus Concept Predictor und Label Predictor
     #binary_concepts: ob die Konzepte binär sind, binary_treshold: Schwellenwert für die Binarisierung der Konzepte
     def __init__(self, concept_predictor: nn.Module, label_predictor: nn.Module, binarization_threshold: float = 0.5, binary_concepts: bool = False):
         super().__init__()
@@ -39,9 +39,9 @@ class cbm_model(nn.Module):
     
     def forward(self, images):
         #concept prediction
-        concepts = self.concept_predictor(images)
+        concept_logits = self.concept_predictor(images)
         #concept activation
-        concept_probs = torch.sigmoid(concepts)
+        concept_probs = torch.sigmoid(concept_logits)
         #binarization der Konzepte wenn binary_concepts True ist
         if self.binary_concepts:
             concept_probs = (concept_probs >= self.binarization_threshold).float()
@@ -50,8 +50,10 @@ class cbm_model(nn.Module):
             concepts = concept_probs
         #label prediction
         label_logits = self.label_predictor(concepts)
+        label_probs = torch.softmax(label_logits, dim=1)
 
-        return label_logits, concept_probs, concepts
+        return label_logits, label_probs, concept_probs, concepts
 
 
-ConceptBottleneckModel = cbm_model
+cbm_model = CBMModel
+ConceptBottleneckModel = CBMModel

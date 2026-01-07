@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from .concept_trainer import EarlyStopping
+
 
 class LabelTrainer:
     def __init__(
@@ -14,6 +16,7 @@ class LabelTrainer:
         threshold=0.5,
         binary_concepts=True,
         loss_fn=None,
+        early_stopping=None,
     ):
         self.concept_predictor = concept_predictor.to(device)
         self.label_predictor = label_predictor.to(device)
@@ -25,6 +28,7 @@ class LabelTrainer:
         self.binary_concepts = binary_concepts
         self.loss_fn = loss_fn or nn.CrossEntropyLoss()
         self.history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+        self.early_stopping = early_stopping or EarlyStopping()
 
         #freeze concept model
         self.concept_predictor.eval()
@@ -87,4 +91,19 @@ class LabelTrainer:
                 f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}"
             )
 
+            stop = self.early_stopping.step(val_loss, self.label_predictor)
+            if stop:
+                print(
+                    f"Early stopping triggered after {self.early_stopping.counter} "
+                    f"non-improving epoch(s)."
+                )
+                break
+
+        if self.early_stopping.best_state is not None:
+            self.label_predictor.load_state_dict(self.early_stopping.best_state)
         return self.history
+
+    @torch.no_grad()
+    def evaluate(self, dataloader=None):
+        dataloader = dataloader or self.val_loader
+        return self.train_epoch(dataloader, train=False)

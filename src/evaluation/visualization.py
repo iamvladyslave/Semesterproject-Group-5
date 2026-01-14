@@ -81,7 +81,8 @@ def plot_confusion_matrix(
     ax.set_title("Confusion Matrix" + (" (Normalized)" if normalize else ""))
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
-    fmt = ".2f" if normalize else "d"
+    # Use float formatting since cm is cast to float for normalization.
+    fmt = ".2f" if normalize else ".0f"
     thresh = cm.max() / 2.0 if cm.size else 0.0
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):

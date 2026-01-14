@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 
 import torch
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 
 EPS = 1e-8
 
@@ -48,4 +49,41 @@ def concept_metrics(
         "per_concept_f1": f1.tolist(),
         "macro": macro,
         "exact_match": exact_match,
+    }
+
+
+def label_metrics(
+    logits: torch.Tensor,
+    targets: torch.Tensor,
+    num_classes: int,
+) -> Dict[str, object]:
+    """
+    Compute classification accuracy, per-class precision/recall/F1, and confusion matrix.
+    """
+    preds = torch.argmax(logits, dim=1)
+    targets = targets.long()
+    preds_np = preds.cpu().numpy()
+    targets_np = targets.cpu().numpy()
+
+    accuracy = float((preds == targets).float().mean().item())
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        targets_np,
+        preds_np,
+        labels=list(range(num_classes)),
+        zero_division=0,
+    )
+    cm = confusion_matrix(targets_np, preds_np, labels=list(range(num_classes)))
+
+    macro = {
+        "precision": float(precision.mean()),
+        "recall": float(recall.mean()),
+        "f1": float(f1.mean()),
+    }
+    return {
+        "accuracy": accuracy,
+        "per_class_precision": precision.tolist(),
+        "per_class_recall": recall.tolist(),
+        "per_class_f1": f1.tolist(),
+        "confusion_matrix": cm.tolist(),
+        "macro": macro,
     }

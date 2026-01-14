@@ -1,8 +1,9 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
@@ -43,7 +44,6 @@ class GTSRBConceptDataset(Dataset):
         *,
         transform=None,
         image_exts: Tuple[str, ...] = (".ppm",),
-        crop_with_roi: bool = True,
         concepts_class_col: str = "class_id",
         concepts_name_col: str = "class_name",
         concept_columns: Optional[List[str]] = None,
@@ -51,7 +51,6 @@ class GTSRBConceptDataset(Dataset):
         self.root_dir = Path(root_dir)
         self.transform = transform
         self.image_exts = tuple(e.lower() for e in image_exts)
-        self.crop_with_roi = crop_with_roi
 
         if not self.root_dir.exists():
             raise FileNotFoundError(f"root_dir not found: {self.root_dir}")
@@ -83,19 +82,6 @@ class GTSRBConceptDataset(Dataset):
         self.class_to_idx = {c: c for c in self.classes}
 
 
-        self._roi_by_path: Dict[Path, Tuple[int, int, int, int]] = {}
-        if self.crop_with_roi:
-            for cdir in class_dirs:
-                csvs = list(cdir.glob("*.csv"))
-                if not csvs:
-                    continue
-                df = pd.read_csv(csvs[0])
-                if {"Filename", "Roi.X1", "Roi.Y1", "Roi.X2", "Roi.Y2"}.issubset(df.columns):
-                    for _, row in df.iterrows():
-                        roi_path = cdir / str(row["Filename"])
-                        if roi_path.exists():
-                            x1, y1, x2, y2 = int(row["Roi.X1"]), int(row["Roi.Y1"]), int(row["Roi.X2"]), int(row["Roi.Y2"])
-                            self._roi_by_path[roi_path] = (x1, y1, x2, y2)
 
         cdf = pd.read_csv(concepts_csv)
         if concepts_class_col not in cdf.columns:
@@ -131,15 +117,138 @@ class GTSRBConceptDataset(Dataset):
 
         with Image.open(path) as im:
             im = im.convert("RGB")
-            roi = self._roi_by_path.get(path)
-            if roi is not None:
-                x1, y1, x2, y2 = roi
-                im = im.crop((x1, y1, x2, y2))
-
             if self.transform is not None:
                 image = self.transform(im)
             else:
                 image = torch.from_numpy(np.array(im)).permute(2, 0, 1).float() / 255.0
         concept_vec = self._concept_by_label[label]
+        label_t = torch.tensor(label, dtype=torch.long)
+        return image, (concept_vec, label_t)
+
+
+def _infer_csv_sep(path: Path) -> str:
+    with open(path, "r") as f:
+        header = f.readline()
+    return ";" if ";" in header else ","
+
+
+def _load_concept_vectors(
+    concepts_csv: str | Path,
+    *,
+    concepts_class_col: str = "class_id",
+    concepts_name_col: str = "class_name",
+    concept_columns: Optional[List[str]] = None,
+):
+    cdf = pd.read_csv(concepts_csv)
+    if concepts_class_col not in cdf.columns:
+        raise KeyError(f"Concepts CSV must have column '{concepts_class_col}'")
+
+    if concept_columns is None:
+        drop = {concepts_class_col}
+        if concepts_name_col in cdf.columns:
+            drop.add(concepts_name_col)
+        concept_columns = [c for c in cdf.columns if c not in drop]
+    concept_columns = list(concept_columns)
+    if not concept_columns:
+        raise ValueError("No concept columns found. Pass concept_columns=... or check your CSV.")
+
+    concept_by_label: Dict[int, torch.Tensor] = {}
+    for _, row in cdf.iterrows():
+        cid = int(row[concepts_class_col])
+        vec = torch.tensor([float(row[c]) for c in concept_columns], dtype=torch.float32)
+        vec = (vec > 0.5).float()
+        concept_by_label[cid] = vec
+    return concept_columns, concept_by_label
+
+
+def _load_concept_columns(
+    concepts_csv: str | Path,
+    *,
+    concepts_class_col: str = "class_id",
+    concepts_name_col: str = "class_name",
+    concept_columns: Optional[List[str]] = None,
+):
+    cdf = pd.read_csv(concepts_csv)
+    if concept_columns is None:
+        drop = {concepts_class_col}
+        if concepts_name_col in cdf.columns:
+            drop.add(concepts_name_col)
+        concept_columns = [c for c in cdf.columns if c not in drop]
+    concept_columns = list(concept_columns)
+    if not concept_columns:
+        raise ValueError("No concept columns found. Pass concept_columns=... or check your CSV.")
+    return concept_columns
+
+
+class GTSRBConceptCSVDataset(Dataset):
+    """
+    Dataset backed by a CSV file with filenames.
+    """
+
+    def __init__(
+        self,
+        root_dir: str | Path,
+        csv_path: str | Path,
+        concepts_csv: str | Path,
+        *,
+        transform=None,
+        image_exts: Tuple[str, ...] = (".ppm",),
+        concept_columns: Optional[List[str]] = None,
+    ):
+        self.root_dir = Path(root_dir)
+        self.transform = transform
+        self.image_exts = tuple(e.lower() for e in image_exts)
+
+        if not self.root_dir.exists():
+            raise FileNotFoundError(f"root_dir not found: {self.root_dir}")
+
+        csv_path = Path(csv_path)
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
+        sep = _infer_csv_sep(csv_path)
+        df = pd.read_csv(csv_path, sep=sep)
+        filename_col = "Filename" if "Filename" in df.columns else "filename"
+        if filename_col not in df.columns:
+            raise KeyError("CSV must include a Filename column")
+
+        self.samples: List[Tuple[Path, int]] = []
+        for _, row in df.iterrows():
+            filename = str(row[filename_col])
+            img_path = self.root_dir / filename
+            if not img_path.exists():
+                continue
+            if img_path.suffix.lower() not in self.image_exts:
+                continue
+            label = -1
+            self.samples.append((img_path, label))
+
+        if not self.samples:
+            raise RuntimeError(f"No valid images found for CSV {csv_path}")
+
+        self.samples = sorted(self.samples, key=lambda t: t[0].name)
+        self.classes = sorted({lbl for _, lbl in self.samples if lbl >= 0})
+        self.class_to_idx = {c: c for c in self.classes}
+
+        self.concept_columns = _load_concept_columns(
+            concepts_csv,
+            concept_columns=concept_columns,
+        )
+        self.num_concepts = len(self.concept_columns)
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, idx: int):
+        path, label = self.samples[idx]
+
+        with Image.open(path) as im:
+            im = im.convert("RGB")
+            if self.transform is not None:
+                image = self.transform(im)
+            else:
+                image = torch.from_numpy(np.array(im)).permute(2, 0, 1).float() / 255.0
+
+        concept_vec = torch.zeros(self.num_concepts, dtype=torch.float32)
         label_t = torch.tensor(label, dtype=torch.long)
         return image, (concept_vec, label_t)

@@ -41,7 +41,6 @@ def build_dataloaders(cfg):
         concepts_csv=dataset_cfg["concepts_csv"],
         transform=tf,
         image_exts=tuple(dataset_cfg.get("image_exts", [".ppm"])),
-        crop_with_roi=True,
     )
 
     val_split = dataset_cfg.get("val_split", 0.1)

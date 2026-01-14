@@ -3,7 +3,8 @@ dataset:
   root_dir: data/GTSRB_FINAL_TRAINING/Final_Training/Images
   # train_csv: data/GTSRB_FINAL_TRAINING/Final_Training/train_index.val_csv
   # val_csv:   data/GTSRB_FINAL_TRAINING/Final_Training/val_index.csv
-  test_csv:  data/GTSRB_FINAL_TEST/GT-final_test.test.csv
+  test_csv:  data/GTSRB_FINAL_TEST/Final_Test/Images/GT-final_test.test.csv
+  test_root_dir: data/GTSRB_FINAL_TEST/Final_Test/Images
   # using random split for train/val for now :(
   concepts_csv: data/concepts_per_class.csv
   image_exts: [".ppm", ".png"]

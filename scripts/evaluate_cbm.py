@@ -1,15 +1,10 @@
 import argparse
-import random
 from pathlib import Path
-
-import numpy as np
 import torch
 import yaml
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import Subset
 
-from src.data.preprocessing import Preprocessing
-from src.dataset import GTSRBConceptDataset
+from src.data.splits import build_dataloaders
 from src.evaluation.metrics import concept_metrics, label_metrics
 from src.evaluation.visualization import (
     plot_confusion_matrix,
@@ -24,74 +19,43 @@ def load_yaml(path):
         return yaml.safe_load(f)
 
 
-def build_dataloaders(cfg):
-    dataset_cfg = cfg["dataset"]
-    dataloader_cfg = cfg["dataloader"]
+def _unwrap_dataset(ds):
+    return ds.dataset if isinstance(ds, Subset) else ds
 
-    image_size = dataset_cfg["image_size"]
-    if isinstance(image_size, int):
-        image_size = (image_size, image_size)
-    preprocessor = Preprocessing(image_size=image_size)
-    tf = preprocessor.transform
-    ds = GTSRBConceptDataset(
-        root_dir=dataset_cfg["root_dir"],
-        concepts_csv=dataset_cfg["concepts_csv"],
-        transform=tf,
-        image_exts=tuple(dataset_cfg.get("image_exts", [".ppm"])),
-    )
 
-    val_split = dataset_cfg.get("val_split", 0.1)
-    test_split = dataset_cfg.get("test_split", 0.1)
-    if val_split + test_split >= 1.0:
-        raise ValueError("val_split + test_split must be < 1.0")
+def _has_labels(ds) -> bool:
+    base = _unwrap_dataset(ds)
+    return getattr(base, "has_labels", True)
 
-    labels = [lbl for _, lbl in ds.samples]
-    indices = list(range(len(labels)))
 
-    if val_split > 0:
-        train_idx, val_idx = train_test_split(
-            indices,
-            test_size=val_split,
-            random_state=dataset_cfg.get("seed", 1923),
-            stratify=labels,
-        )
+def _filenames_for_dataset(ds) -> list[str]:
+    base = _unwrap_dataset(ds)
+    if not hasattr(base, "samples"):
+        raise AttributeError("Dataset does not expose samples for filename export.")
+    if isinstance(ds, Subset):
+        indices = ds.indices
     else:
-        train_idx, val_idx = indices, []
+        indices = range(len(base.samples))
+    return [Path(base.samples[i][0]).name for i in indices]
 
-    test_idx = []
-    if test_split > 0:
-        train_labels = [labels[i] for i in train_idx]
-        train_idx, test_idx = train_test_split(
-            train_idx,
-            test_size=test_split / max(1e-8, (1 - val_split)),
-            random_state=dataset_cfg.get("seed", 1923),
-            stratify=train_labels,
-        )
 
-    test_ds = Subset(ds, test_idx) if test_idx else None
-
-    def seed_worker(worker_id: int):
-        worker_seed = dataset_cfg.get("seed", 1923) + worker_id
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
-
-    generator = torch.Generator().manual_seed(dataset_cfg.get("seed", 1923))
-
-    def make_loader(split_ds):
-        if split_ds is None:
-            return None
-        return DataLoader(
-            split_ds,
-            batch_size=dataloader_cfg["batch_size"],
-            shuffle=False,
-            num_workers=dataloader_cfg["num_workers"],
-            pin_memory=dataloader_cfg.get("pin_memory", True),
-            worker_init_fn=seed_worker,
-            generator=generator,
-        )
-
-    return ds, make_loader(test_ds)
+def _predict_labels(concept_model, label_model, dataloader, device, threshold, binary_concepts):
+    concept_model.eval()
+    label_model.eval()
+    preds = []
+    with torch.no_grad():
+        for images, _ in dataloader:
+            images = images.to(device)
+            concept_logits = concept_model(images)
+            concept_probs = torch.sigmoid(concept_logits)
+            if binary_concepts:
+                concept_inputs = (concept_probs >= threshold).float()
+            else:
+                concept_inputs = concept_probs
+            label_logits = label_model(concept_inputs)
+            batch_preds = label_logits.argmax(dim=1).cpu().tolist()
+            preds.extend(batch_preds)
+    return preds
 
 
 def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, binary_concepts, max_examples):
@@ -162,12 +126,13 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
 
 def main(args):
     data_cfg = load_yaml(args.data_config)
-    ds, test_loader = build_dataloaders(data_cfg)
-    if test_loader is None:
+    _, _, test_ds, _, _, test_loader = build_dataloaders(data_cfg)
+    if test_loader is None or test_ds is None:
         raise RuntimeError("test loader is required for evaluation.")
 
-    num_concepts = ds.num_concepts
-    num_classes = len(ds.classes)
+    base_ds = _unwrap_dataset(test_ds)
+    num_concepts = base_ds.num_concepts
+    num_classes = len(base_ds.classes)
 
     device = torch.device(args.device)
     backbone_cfg = ConceptBackboneConfig(
@@ -183,6 +148,29 @@ def main(args):
     label_model.load_state_dict(torch.load(args.label_ckpt, map_location=device))
     concept_model.to(device)
     label_model.to(device)
+
+    if not _has_labels(test_ds):
+        preds = _predict_labels(
+            concept_model,
+            label_model,
+            test_loader,
+            device,
+            threshold=args.threshold,
+            binary_concepts=args.binary_concepts,
+        )
+        filenames = _filenames_for_dataset(test_ds)
+        if len(preds) != len(filenames):
+            raise RuntimeError("Prediction count does not match test filenames.")
+
+        out_dir = Path(args.save_dir) if args.save_dir else Path("artifacts/cbm_eval")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = Path(args.predictions_csv) if args.predictions_csv else out_dir / "test_predictions.csv"
+        with open(out_path, "w") as f:
+            f.write("Filename,ClassId\n")
+            for name, pred in zip(filenames, preds):
+                f.write(f"{name},{pred}\n")
+        print(f"Unlabeled test set detected. Predictions saved to {out_path}")
+        return
 
     concept_eval, label_eval, examples = evaluate_cbm(
         concept_model,
@@ -213,7 +201,7 @@ def main(args):
                 pred_labels=examples["pred_labels"],
                 concept_targets=examples["concept_targets"],
                 concept_preds=examples["concept_preds"],
-                concept_names=ds.concept_columns,
+                concept_names=base_ds.concept_columns,
                 max_concepts=args.max_concepts,
                 save_path=out_dir / "example_predictions.png",
             )
@@ -238,6 +226,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-binary-concepts", dest="binary_concepts", action="store_false")
     parser.set_defaults(binary_concepts=True)
     parser.add_argument("--save-dir", type=str, default="artifacts/cbm_eval")
+    parser.add_argument("--predictions-csv", type=str, default=None)
     parser.add_argument("--num-examples", type=int, default=6)
     parser.add_argument("--max-concepts", type=int, default=None)
     args = parser.parse_args()

@@ -132,6 +132,14 @@ def _infer_csv_sep(path: Path) -> str:
     return ";" if ";" in header else ","
 
 
+def _find_label_column(columns: List[str]) -> Optional[str]:
+    lower_map = {c.lower(): c for c in columns}
+    for candidate in ("classid", "class_id", "label", "class"):
+        if candidate in lower_map:
+            return lower_map[candidate]
+    return None
+
+
 def _load_concept_vectors(
     concepts_csv: str | Path,
     *,
@@ -194,6 +202,8 @@ class GTSRBConceptCSVDataset(Dataset):
         transform=None,
         image_exts: Tuple[str, ...] = (".ppm",),
         concept_columns: Optional[List[str]] = None,
+        label_col: Optional[str] = None,
+        require_labels: bool = False,
     ):
         self.root_dir = Path(root_dir)
         self.transform = transform
@@ -212,6 +222,14 @@ class GTSRBConceptCSVDataset(Dataset):
         if filename_col not in df.columns:
             raise KeyError("CSV must include a Filename column")
 
+        label_col = label_col or _find_label_column(list(df.columns))
+        if label_col is None and require_labels:
+            raise KeyError(
+                "CSV must include a label column (ClassId/class_id/label) "
+                "to evaluate labels and concepts."
+            )
+        self.has_labels = label_col is not None
+
         self.samples: List[Tuple[Path, int]] = []
         for _, row in df.iterrows():
             filename = str(row[filename_col])
@@ -220,7 +238,7 @@ class GTSRBConceptCSVDataset(Dataset):
                 continue
             if img_path.suffix.lower() not in self.image_exts:
                 continue
-            label = -1
+            label = int(row[label_col]) if self.has_labels else -1
             self.samples.append((img_path, label))
 
         if not self.samples:
@@ -230,11 +248,14 @@ class GTSRBConceptCSVDataset(Dataset):
         self.classes = sorted({lbl for _, lbl in self.samples if lbl >= 0})
         self.class_to_idx = {c: c for c in self.classes}
 
-        self.concept_columns = _load_concept_columns(
+        self.concept_columns, self._concept_by_label = _load_concept_vectors(
             concepts_csv,
             concept_columns=concept_columns,
         )
         self.num_concepts = len(self.concept_columns)
+        self.num_classes = len(self._concept_by_label)
+        self.classes = sorted(self._concept_by_label.keys())
+        self.class_to_idx = {c: c for c in self.classes}
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -244,11 +265,14 @@ class GTSRBConceptCSVDataset(Dataset):
 
         with Image.open(path) as im:
             im = im.convert("RGB")
-            if self.transform is not None:
-                image = self.transform(im)
-            else:
-                image = torch.from_numpy(np.array(im)).permute(2, 0, 1).float() / 255.0
+        if self.transform is not None:
+            image = self.transform(im)
+        else:
+            image = torch.from_numpy(np.array(im)).permute(2, 0, 1).float() / 255.0
 
-        concept_vec = torch.zeros(self.num_concepts, dtype=torch.float32)
+        if self.has_labels:
+            concept_vec = self._concept_by_label[label]
+        else:
+            concept_vec = torch.zeros(self.num_concepts, dtype=torch.float32)
         label_t = torch.tensor(label, dtype=torch.long)
         return image, (concept_vec, label_t)

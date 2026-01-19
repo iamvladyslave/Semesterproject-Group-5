@@ -1,15 +1,10 @@
 import argparse
-import random
 from pathlib import Path
-
-import numpy as np
 import torch
 import yaml
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import Subset
 
-from src.data.preprocessing import Preprocessing
-from src.dataset import GTSRBConceptDataset
+from src.data.splits import build_dataloaders
 from src.evaluation.metrics import concept_metrics, label_metrics
 from src.evaluation.visualization import (
     plot_confusion_matrix,
@@ -27,53 +22,8 @@ def load_yaml(path):
         return yaml.safe_load(f)
 
 
-def build_dataloaders(cfg):
-    dataset_cfg = cfg["dataset"]
-    dataloader_cfg = cfg["dataloader"]
-
-    image_size = dataset_cfg["image_size"]
-    if isinstance(image_size, int):
-        image_size = (image_size, image_size)
-    preprocessor = Preprocessing(image_size=image_size)
-    tf = preprocessor.transform
-    ds = GTSRBConceptDataset(
-        root_dir=dataset_cfg["root_dir"],
-        concepts_csv=dataset_cfg["concepts_csv"],
-        transform=tf,
-        image_exts=tuple(dataset_cfg.get("image_exts", [".ppm"])),
-    )
-
-    val_split = dataset_cfg.get("val_split", 0.1)
-    labels = [lbl for _, lbl in ds.samples]
-    indices = list(range(len(labels)))
-    train_idx, val_idx = train_test_split(
-        indices,
-        test_size=val_split,
-        random_state=dataset_cfg.get("seed", 1923),
-        stratify=labels,
-    )
-    train_ds, val_ds = Subset(ds, train_idx), Subset(ds, val_idx)
-
-    def seed_worker(worker_id: int):
-        worker_seed = dataset_cfg.get("seed", 1923) + worker_id
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
-
-    generator = torch.Generator().manual_seed(dataset_cfg.get("seed", 1923))
-
-    def make_loader(split_ds, shuffle):
-        return DataLoader(
-            split_ds,
-            batch_size=dataloader_cfg["batch_size"],
-            shuffle=shuffle,
-            num_workers=dataloader_cfg["num_workers"],
-            pin_memory=dataloader_cfg.get("pin_memory", True),
-            worker_init_fn=seed_worker,
-            generator=generator,
-        )
-
-    return ds, make_loader(train_ds, True), make_loader(val_ds, False)
+def _unwrap_dataset(ds):
+    return ds.dataset if isinstance(ds, Subset) else ds
 
 
 def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, binary_concepts, max_examples):
@@ -146,10 +96,13 @@ def main(args):
     data_cfg = load_yaml(args.data_config)
     train_cfg = load_yaml(args.training_config)
 
-    ds, train_loader, val_loader = build_dataloaders(data_cfg)
+    train_ds, val_ds, _, train_loader, val_loader, _ = build_dataloaders(data_cfg)
+    if val_loader is None:
+        raise RuntimeError("Validation loader is required for CBM training.")
 
-    num_concepts = ds.num_concepts
-    num_classes = len(ds.classes)
+    base_ds = _unwrap_dataset(train_ds)
+    num_concepts = base_ds.num_concepts
+    num_classes = len(base_ds.classes)
 
     device_name = train_cfg["training"].get("device", "cuda")
     if device_name.startswith("cuda") and not torch.cuda.is_available():

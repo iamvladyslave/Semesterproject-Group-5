@@ -1,21 +1,17 @@
 from __future__ import annotations
 
 import argparse
-import random
 from pathlib import Path
 import yaml
 
 import torch
-from torch.utils.data import DataLoader, Subset
-import numpy as np
-from sklearn.model_selection import train_test_split
+from torch.utils.data import Subset
 
-from src.dataset import GTSRBConceptDataset
+from src.data.splits import build_dataloaders
 from src.models import ConceptBackboneConfig, ConceptPredictor
 from src.training.concept_trainer import ConceptTrainer, EarlyStopping
 from src.evaluation.metrics import concept_metrics
 from src.evaluation.visualization import plot_per_concept_performance, plot_training_curves
-from src.data.preprocessing import Preprocessing
 
 
 def load_yaml(path: str | Path):
@@ -23,61 +19,22 @@ def load_yaml(path: str | Path):
         return yaml.safe_load(f)
 
 
-def build_dataloaders(cfg):
-    dataset_cfg = cfg["dataset"]
-    dataloader_cfg = cfg["dataloader"]
-    base_seed = dataset_cfg.get("seed", 1923)
-
-    image_size = dataset_cfg["image_size"]
-    if isinstance(image_size, int):
-        image_size = (image_size, image_size)
-    preprocessor = Preprocessing(image_size=image_size)
-    tf = preprocessor.transform
-    ds = GTSRBConceptDataset(
-        root_dir=dataset_cfg["root_dir"],
-        concepts_csv=dataset_cfg["concepts_csv"],
-        transform=tf,
-        image_exts=tuple(dataset_cfg.get("image_exts", [".ppm"])),
-    )
-
-    val_split = dataset_cfg.get("val_split", 0.1)
-    labels = [lbl for _, lbl in ds.samples]
-    indices = list(range(len(labels)))
-    train_idx, val_idx = train_test_split(
-        indices,
-        test_size=val_split,
-        random_state=base_seed,
-        stratify=labels,
-    )
-    train_ds, val_ds = Subset(ds, train_idx), Subset(ds, val_idx)
-
-    def seed_worker(worker_id: int):
-        worker_seed = base_seed + worker_id
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
-
-    generator = torch.Generator().manual_seed(base_seed)
-
-    def make_loader(split_ds, shuffle):
-        return DataLoader(
-            split_ds,
-            batch_size=dataloader_cfg["batch_size"],
-            shuffle=shuffle,
-            num_workers=dataloader_cfg["num_workers"],
-            pin_memory=dataloader_cfg.get("pin_memory", True),
-            worker_init_fn=seed_worker,
-            generator=generator,
-        )
-
-    return ds.num_concepts, make_loader(train_ds, True), make_loader(val_ds, False)
+def _num_concepts(ds):
+    if hasattr(ds, "num_concepts"):
+        return ds.num_concepts
+    if isinstance(ds, Subset):
+        return ds.dataset.num_concepts
+    raise AttributeError("Dataset does not expose num_concepts")
 
 
 def main(args):
     data_cfg = load_yaml(args.data_config)
     train_cfg = load_yaml(args.training_config)
 
-    num_concepts, train_loader, val_loader = build_dataloaders(data_cfg)
+    train_ds, val_ds, _, train_loader, val_loader, _ = build_dataloaders(data_cfg)
+    if val_loader is None:
+        raise RuntimeError("Validation loader is required for concept training.")
+    num_concepts = _num_concepts(train_ds)
 
     backbone_cfg = ConceptBackboneConfig(
         name=args.backbone,

@@ -11,7 +11,7 @@ from src.data.splits import build_dataloaders
 from src.models import ConceptBackboneConfig, ConceptPredictor
 from src.training.concept_trainer import ConceptTrainer, EarlyStopping
 from src.evaluation.metrics import concept_metrics
-from src.evaluation.visualization import plot_per_concept_performance, plot_training_curves
+from src.evaluation.visualization import plot_training_curves
 
 
 def load_yaml(path: str | Path):
@@ -91,11 +91,6 @@ def main(args):
         out_dir = Path(args.save_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         plot_training_curves(history.__dict__, save_path=out_dir / "training_curves.png")
-        plot_per_concept_performance(
-            metrics["per_concept_accuracy"],
-            title="Per-Concept Accuracy",
-            save_path=out_dir / "per_concept_accuracy.png",
-        )
         torch.save(model.state_dict(), out_dir / "concept_predictor.pt")
         with open(out_dir / "metrics.yaml", "w") as f:
             yaml.safe_dump(metrics, f)

@@ -9,7 +9,6 @@ from src.evaluation.metrics import concept_metrics, label_metrics
 from src.evaluation.visualization import (
     plot_confusion_matrix,
     plot_example_predictions,
-    plot_per_concept_performance,
     plot_training_curves,
 )
 from src.models import ConceptBackboneConfig, ConceptPredictor, LabelPredictor
@@ -180,11 +179,6 @@ def main(args):
 
         plot_training_curves(concept_history.__dict__, save_path=out_dir / "concept_training_curves.png")
         plot_training_curves(label_history, save_path=out_dir / "label_training_curves.png")
-        plot_per_concept_performance(
-            concept_eval["per_concept_accuracy"],
-            title="Per-Concept Accuracy (Val)",
-            save_path=out_dir / "per_concept_accuracy_val.png",
-        )
         plot_confusion_matrix(label_eval["confusion_matrix"], save_path=out_dir / "confusion_matrix.png")
 
         if examples is not None:

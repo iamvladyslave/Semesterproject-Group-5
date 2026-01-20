@@ -9,7 +9,6 @@ from src.evaluation.metrics import concept_metrics, label_metrics
 from src.evaluation.visualization import (
     plot_confusion_matrix,
     plot_example_predictions,
-    plot_per_concept_performance,
 )
 from src.models import ConceptBackboneConfig, ConceptPredictor, LabelPredictor
 
@@ -187,11 +186,6 @@ def main(args):
     if args.save_dir:
         out_dir = Path(args.save_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        plot_per_concept_performance(
-            concept_eval["per_concept_accuracy"],
-            title="Per-Concept Accuracy (Test)",
-            save_path=out_dir / "per_concept_accuracy_test.png",
-        )
         plot_confusion_matrix(label_eval["confusion_matrix"], save_path=out_dir / "confusion_matrix.png")
 
         if examples is not None:

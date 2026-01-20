@@ -1,4 +1,4 @@
-name: semproServer
+name: sempro
 channels:
   - pytorch
   - nvidia

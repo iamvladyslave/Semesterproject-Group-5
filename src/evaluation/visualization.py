@@ -31,29 +31,6 @@ def plot_training_curves(history: Dict[str, List[float]], *, save_path: Optional
     return fig
 
 
-def plot_per_concept_performance(
-    values: List[float],
-    *,
-    title: str = "Per-Concept Metric",
-    concept_names: Optional[List[str]] = None,
-    ylabel: str = "Accuracy",
-    save_path: Optional[str] = None,
-):
-    idx = list(range(len(values)))
-    labels = concept_names if concept_names is not None else [f"C{i}" for i in idx]
-
-    fig, ax = plt.subplots(figsize=(12, 4))
-    ax.bar(idx, values)
-    ax.set_xticks(idx)
-    ax.set_xticklabels(labels, rotation=90)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    plt.tight_layout()
-    if save_path:
-        fig.savefig(save_path, bbox_inches="tight")
-    return fig
-
-
 def plot_confusion_matrix(
     cm: Sequence[Sequence[int]],
     *,

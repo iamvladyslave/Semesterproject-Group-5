@@ -129,11 +129,15 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
 
 def main(args):
     data_cfg = load_yaml(args.data_config)
-    _, _, test_ds, _, _, test_loader = build_dataloaders(data_cfg)
-    if test_loader is None or test_ds is None:
-        raise RuntimeError("test loader is required for evaluation.")
+    train_ds, val_ds, test_ds, train_loader, val_loader, test_loader = build_dataloaders(data_cfg)
+    if args.split == "val":
+        eval_ds, eval_loader, split_name = val_ds, val_loader, "val"
+    else:
+        eval_ds, eval_loader, split_name = test_ds, test_loader, "test"
+    if eval_loader is None or eval_ds is None:
+        raise RuntimeError(f"{split_name} loader is required for evaluation.")
 
-    base_ds = _unwrap_dataset(test_ds)
+    base_ds = _unwrap_dataset(eval_ds)
     num_concepts = base_ds.num_concepts
     num_classes = len(base_ds.classes)
 
@@ -154,33 +158,34 @@ def main(args):
     concept_model.to(device)
     label_model.to(device)
 
-    if not _has_labels(test_ds):
+    if not _has_labels(eval_ds):
         preds = _predict_labels(
             concept_model,
             label_model,
-            test_loader,
+            eval_loader,
             device,
             threshold=args.threshold,
             binary_concepts=args.binary_concepts,
         )
-        filenames = _filenames_for_dataset(test_ds)
+        filenames = _filenames_for_dataset(eval_ds)
         if len(preds) != len(filenames):
             raise RuntimeError("Prediction count does not match test filenames.")
 
         out_dir = Path(args.save_dir) if args.save_dir else Path("artifacts/cbm_eval")
         out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = Path(args.predictions_csv) if args.predictions_csv else out_dir / "test_predictions.csv"
+        default_name = "test_predictions.csv" if split_name == "test" else f"{split_name}_predictions.csv"
+        out_path = Path(args.predictions_csv) if args.predictions_csv else out_dir / default_name
         with open(out_path, "w") as f:
             f.write("Filename,ClassId\n")
             for name, pred in zip(filenames, preds):
                 f.write(f"{name},{pred}\n")
-        print(f"Unlabeled test set detected. Predictions saved to {out_path}")
+        print(f"Unlabeled {split_name} split detected. Predictions saved to {out_path}")
         return
 
     concept_eval, label_eval, hamming_distances, examples = evaluate_cbm(
         concept_model,
         label_model,
-        test_loader,
+        eval_loader,
         device,
         threshold=args.threshold,
         binary_concepts=args.binary_concepts,
@@ -249,6 +254,7 @@ if __name__ == "__main__":
     parser.add_argument("--binary-concepts", dest="binary_concepts", action="store_true")
     parser.add_argument("--no-binary-concepts", dest="binary_concepts", action="store_false")
     parser.set_defaults(binary_concepts=True)
+    parser.add_argument("--split", choices=("test", "val"), default="test")
     parser.add_argument("--save-dir", type=str, default="artifacts/cbm_eval")
     parser.add_argument("--predictions-csv", type=str, default=None)
     parser.add_argument("--num-examples", type=int, default=6)

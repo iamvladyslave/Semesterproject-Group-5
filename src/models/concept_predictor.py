@@ -23,7 +23,7 @@ class ConceptPredictor(nn.Module):
     Concept prediction head on top of a pretrained EfficientNetV2 backbone.
 
     The backbone's classifier is replaced with a linear layer producing
-    `num_concepts` logits. Sigmoid activation is applied in loss/metric code.
+    `num_concepts` logits. Sigmoid activation is applied in cbm code.
     """
 
     def __init__(

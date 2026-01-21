@@ -1,6 +1,12 @@
 # Concept Bottleneck Model - Concept Predictor
 
-This repo now includes a concept prediction stage for GTSRB traffic sign images.
+## Quick run (train + evaluate)
+```
+python -m scripts.run
+```
+only CUDA
+
+
 
 ## Train the concept predictor
 ```
@@ -18,11 +24,7 @@ Flags:
 
 Artifacts: model weights, training curves, and metrics are written to `--save-dir`.
 
-~~Takes about an hour for now, change epoch to 5 or so to get sanity-check results in 10-15 minutes. (config/training_config.yaml)~~
-Runs on Gruenau without issues, no full run done yet.
-
 ### TODO: (from most to least important)
 
-- simplify script to run (task 4)
 - extend README for complete setup (task 4)
 - notebook with snippets for demo for final?

@@ -133,7 +133,9 @@ def main(args):
     num_concepts = base_ds.num_concepts
     num_classes = len(base_ds.classes)
 
-    device = torch.device(args.device)
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA device is required but was not detected.")
+    device = torch.device("cuda")
     backbone_cfg = ConceptBackboneConfig(
         name=args.backbone,
         pretrained=False,
@@ -212,7 +214,6 @@ if __name__ == "__main__":
     parser.add_argument("--data-config", default="config/data_config.yaml")
     parser.add_argument("--concept-ckpt", default="artifacts/cbm/concept_predictor.pt")
     parser.add_argument("--label-ckpt", default="artifacts/cbm/label_predictor.pt")
-    parser.add_argument("--device", default="cuda")
     parser.add_argument("--backbone", default="efficientnet_v2_s")
     parser.add_argument("--dropout", type=float, default=0.2)
     parser.add_argument("--threshold", type=float, default=0.5)

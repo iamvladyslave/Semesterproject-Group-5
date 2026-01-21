@@ -67,7 +67,7 @@ def main(args):
         early_stopping=early_stopping,
     )
 
-    max_epochs = args.epochs if args.epochs is not None else train_cfg["training"]["epochs"]
+    max_epochs = args.epoch if args.epoch is not None else train_cfg["training"]["epochs"]
     history = trainer.fit(max_epochs)
     print("Training finished. Best val loss:", early_stopping.best_loss)
 
@@ -107,6 +107,6 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.2)
     parser.add_argument("--threshold", type=float, default=0.5)
     parser.add_argument("--save-dir", type=str, default="artifacts/concept_predictor")
-    parser.add_argument("--epochs", type=int, default=None, help="Override epochs from training config")
+    parser.add_argument("--epoch", type=int, default=None, help="Override epochs from training config")
     args = parser.parse_args()
     main(args)

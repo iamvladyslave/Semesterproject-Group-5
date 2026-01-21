@@ -188,7 +188,7 @@ def main(args):
                 pred_labels=examples["pred_labels"],
                 concept_targets=examples["concept_targets"],
                 concept_preds=examples["concept_preds"],
-                concept_names=ds.concept_columns,
+                concept_names=base_ds.concept_columns,
                 max_concepts=args.max_concepts,
                 save_path=out_dir / "example_predictions.png",
             )

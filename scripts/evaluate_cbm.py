@@ -9,6 +9,8 @@ from src.evaluation.metrics import concept_metrics, label_metrics
 from src.evaluation.visualization import (
     plot_confusion_matrix,
     plot_example_predictions,
+    plot_hamming_histogram,
+    plot_score_bars,
 )
 from src.models import ConceptBackboneConfig, ConceptPredictor, LabelPredictor
 
@@ -110,6 +112,8 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
 
     concept_eval = concept_metrics(concept_logits, concept_targets, threshold=threshold)
     label_eval = label_metrics(label_logits, labels, num_classes=label_logits.shape[1])
+    concept_preds = (torch.sigmoid(concept_logits) >= threshold).int()
+    hamming_distances = (concept_preds != concept_targets).sum(dim=1).cpu().tolist()
 
     examples = None
     if example_images:
@@ -120,7 +124,7 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
             "concept_targets": torch.cat(example_concept_targets, dim=0),
             "concept_preds": torch.cat(example_concept_preds, dim=0),
         }
-    return concept_eval, label_eval, examples
+    return concept_eval, label_eval, hamming_distances, examples
 
 
 def main(args):
@@ -173,7 +177,7 @@ def main(args):
         print(f"Unlabeled test set detected. Predictions saved to {out_path}")
         return
 
-    concept_eval, label_eval, examples = evaluate_cbm(
+    concept_eval, label_eval, hamming_distances, examples = evaluate_cbm(
         concept_model,
         label_model,
         test_loader,
@@ -189,6 +193,31 @@ def main(args):
         out_dir = Path(args.save_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         plot_confusion_matrix(label_eval["confusion_matrix"], save_path=out_dir / "confusion_matrix.png")
+        plot_score_bars(
+            concept_eval["per_concept_f1"],
+            labels=getattr(base_ds, "concept_columns", None),
+            title="Per-Concept F1 (Worst to Best)",
+            ylabel="F1",
+            sort_asc=True,
+            max_items=10,
+            save_path=out_dir / "per_concept_f1.png",
+        )
+        plot_score_bars(
+            label_eval["per_class_f1"],
+            labels=getattr(base_ds, "classes", None),
+            title="Per-Class F1 (Worst to Best)",
+            ylabel="F1",
+            sort_asc=True,
+            max_items=10,
+            save_path=out_dir / "per_class_f1.png",
+        )
+        avg_hamming = sum(hamming_distances) / len(hamming_distances) if hamming_distances else 0.0
+        exact_match = concept_eval.get("exact_match", 0.0)
+        plot_hamming_histogram(
+            hamming_distances,
+            title=f"Hamming Distance (avg={avg_hamming:.2f}, exact={exact_match:.3f})",
+            save_path=out_dir / "hamming_distance.png",
+        )
 
         if examples is not None:
             plot_example_predictions(

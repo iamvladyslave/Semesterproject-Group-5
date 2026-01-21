@@ -133,3 +133,70 @@ def plot_example_predictions(
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
     return fig
+
+
+def plot_score_bars(
+    scores: Sequence[float],
+    *,
+    labels: Optional[Sequence[str]] = None,
+    title: str = "Scores",
+    ylabel: str = "Score",
+    sort_asc: bool = False,
+    max_items: Optional[int] = None,
+    save_path: Optional[str] = None,
+):
+    scores_np = np.asarray(scores, dtype=float)
+    n = scores_np.shape[0]
+    if n == 0:
+        return None
+
+    order = np.argsort(scores_np)
+    if not sort_asc:
+        order = order[::-1]
+
+    if max_items is not None and max_items > 0:
+        order = order[: min(max_items, n)]
+
+    labels_list = list(labels) if labels is not None else [str(i) for i in range(n)]
+    labels_ordered = [labels_list[i] for i in order]
+    scores_ordered = scores_np[order]
+
+    fig_h = max(4, 0.3 * n)
+    fig, ax = plt.subplots(figsize=(10, fig_h))
+    y_pos = np.arange(n)
+    ax.barh(y_pos, scores_ordered)
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(labels_ordered)
+    ax.invert_yaxis()
+    ax.set_xlabel(ylabel)
+    ax.set_title(title)
+
+    plt.tight_layout()
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight")
+    return fig
+
+
+def plot_hamming_histogram(
+    distances: Sequence[int],
+    *,
+    title: str = "Hamming Distance",
+    save_path: Optional[str] = None,
+):
+    distances_np = np.asarray(distances, dtype=int)
+    if distances_np.size == 0:
+        return None
+
+    max_dist = int(distances_np.max())
+    bins = np.arange(max_dist + 2) - 0.5
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.hist(distances_np, bins=bins, edgecolor="black")
+    ax.set_xticks(range(max_dist + 1))
+    ax.set_xlabel("Number of concept errors")
+    ax.set_ylabel("Count")
+    ax.set_title(title)
+
+    plt.tight_layout()
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight")
+    return fig

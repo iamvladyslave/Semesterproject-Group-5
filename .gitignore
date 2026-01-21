@@ -18,3 +18,4 @@ env/
 *.pt
 *.pth
 *.onnx
+artifacts/

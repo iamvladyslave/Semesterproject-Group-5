@@ -24,6 +24,9 @@ Flags:
 
 Artifacts: model weights, training curves, and metrics are written to `--save-dir`.
 
+Current full run takes ca. 40 minutes,
+    early stopping on epochs 22 and 14 respectively.
+
 ### TODO: (from most to least important)
 
 - extend README for complete setup (task 4)

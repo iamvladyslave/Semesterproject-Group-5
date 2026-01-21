@@ -161,9 +161,9 @@ def plot_score_bars(
     labels_ordered = [labels_list[i] for i in order]
     scores_ordered = scores_np[order]
 
-    fig_h = max(4, 0.3 * n)
+    fig_h = max(4, 0.3 * len(scores_ordered))
     fig, ax = plt.subplots(figsize=(10, fig_h))
-    y_pos = np.arange(n)
+    y_pos = np.arange(len(scores_ordered))
     ax.barh(y_pos, scores_ordered)
     ax.set_yticks(y_pos)
     ax.set_yticklabels(labels_ordered)

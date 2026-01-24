@@ -41,6 +41,7 @@ def _eval(args, concept_ckpt: Path, label_ckpt: Path) -> None:
         dropout=args.dropout,
         threshold=args.threshold,
         binary_concepts=args.binary_concepts,
+        split=args.split,
         save_dir=args.eval_dir,
         predictions_csv=args.predictions_csv,
         num_examples=args.num_examples,
@@ -77,6 +78,7 @@ def main() -> None:
     parser.add_argument("--binary-concepts", dest="binary_concepts", action="store_true")
     parser.add_argument("--no-binary-concepts", dest="binary_concepts", action="store_false")
     parser.set_defaults(binary_concepts=True)
+    parser.add_argument("--split", choices=("test", "val"), default="test")
     parser.add_argument("--num-examples", type=int, default=6)
     parser.add_argument("--max-concepts", type=int, default=None)
 

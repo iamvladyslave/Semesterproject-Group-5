@@ -17,11 +17,19 @@ def plot_training_curves(history: Dict[str, List[float]], *, save_path: Optional
     ax[0].set_xlabel("Epoch")
     ax[0].legend()
 
-    # ax[1].plot(history.get("train_acc", []), label="Train")
-    # ax[1].plot(history.get("val_acc", []), label="Val")
-    ax[1].plot(history.get("train_vec_acc", []), label="Train (exact-match)")
-    ax[1].plot(history.get("val_vec_acc", []), label="Val (exact-match)")
-    ax[1].set_title("Concept Accuracy")
+    train_vec_acc = history.get("train_vec_acc", [])
+    val_vec_acc = history.get("val_vec_acc", [])
+    train_acc = history.get("train_acc", [])
+    val_acc = history.get("val_acc", [])
+
+    if train_vec_acc or val_vec_acc:
+        ax[1].plot(train_vec_acc, label="Train (exact-match)")
+        ax[1].plot(val_vec_acc, label="Val (exact-match)")
+        ax[1].set_title("Exact-Match Accuracy")
+    else:
+        ax[1].plot(train_acc, label="Train")
+        ax[1].plot(val_acc, label="Val")
+        ax[1].set_title("Accuracy")
     ax[1].set_xlabel("Epoch")
     ax[1].legend()
 

@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+import random
 import torch
 import yaml
 from torch.utils.data import Subset
@@ -34,12 +35,12 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
     all_label_logits = []
     all_labels = []
 
-    example_images = []
-    example_true = []
-    example_pred = []
-    example_concept_targets = []
-    example_concept_preds = []
-    examples_collected = 0
+    rng = random.Random()
+    example_samples = []
+    samples_seen = 0
+
+    wrong_counts = {}
+    wrong_samples = {}
 
     with torch.no_grad():
         for images, (concept_targets, labels) in dataloader:
@@ -60,16 +61,38 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
             all_label_logits.append(label_logits.cpu())
             all_labels.append(labels.cpu())
 
-            if examples_collected < max_examples:
-                remaining = max_examples - examples_collected
-                take = min(remaining, images.size(0))
-                preds = label_logits.argmax(dim=1)
-                example_images.append(images[:take].cpu())
-                example_true.extend(labels[:take].cpu().tolist())
-                example_pred.extend(preds[:take].cpu().tolist())
-                example_concept_targets.append(concept_targets[:take].cpu())
-                example_concept_preds.append(concept_inputs[:take].cpu())
-                examples_collected += take
+            preds = label_logits.argmax(dim=1)
+            if max_examples and max_examples > 0:
+                for idx in range(images.size(0)):
+                    sample = {
+                        "image": images[idx].cpu(),
+                        "true": labels[idx].item(),
+                        "pred": preds[idx].item(),
+                        "concept_target": concept_targets[idx].cpu(),
+                        "concept_pred": concept_inputs[idx].cpu(),
+                    }
+                    samples_seen += 1
+                    if len(example_samples) < max_examples:
+                        example_samples.append(sample)
+                    else:
+                        replace_idx = rng.randrange(samples_seen)
+                        if replace_idx < max_examples:
+                            example_samples[replace_idx] = sample
+
+            for idx in range(images.size(0)):
+                true_lbl = labels[idx].item()
+                pred_lbl = preds[idx].item()
+                if pred_lbl != true_lbl:
+                    count = wrong_counts.get(true_lbl, 0) + 1
+                    wrong_counts[true_lbl] = count
+                    if true_lbl not in wrong_samples or rng.randrange(count) == 0:
+                        wrong_samples[true_lbl] = {
+                            "image": images[idx].cpu(),
+                            "true": true_lbl,
+                            "pred": pred_lbl,
+                            "concept_target": concept_targets[idx].cpu(),
+                            "concept_pred": concept_inputs[idx].cpu(),
+                        }
 
     concept_logits = torch.cat(all_concept_logits, dim=0)
     concept_targets = torch.cat(all_concept_targets, dim=0)
@@ -80,15 +103,29 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
     label_eval = label_metrics(label_logits, labels, num_classes=label_logits.shape[1])
 
     examples = None
-    if example_images:
+    if example_samples:
         examples = {
-            "images": torch.cat(example_images, dim=0),
-            "true_labels": example_true,
-            "pred_labels": example_pred,
-            "concept_targets": torch.cat(example_concept_targets, dim=0),
-            "concept_preds": torch.cat(example_concept_preds, dim=0),
+            "images": torch.stack([s["image"] for s in example_samples], dim=0),
+            "true_labels": [s["true"] for s in example_samples],
+            "pred_labels": [s["pred"] for s in example_samples],
+            "concept_targets": torch.stack([s["concept_target"] for s in example_samples], dim=0),
+            "concept_preds": torch.stack([s["concept_pred"] for s in example_samples], dim=0),
         }
-    return concept_eval, label_eval, examples
+
+    wrong_examples = None
+    if wrong_counts:
+        top_labels = sorted(wrong_counts.items(), key=lambda item: item[1], reverse=True)[:5]
+        top_samples = [wrong_samples[label] for label, _ in top_labels if label in wrong_samples]
+        if top_samples:
+            wrong_examples = {
+                "images": torch.stack([s["image"] for s in top_samples], dim=0),
+                "true_labels": [s["true"] for s in top_samples],
+                "pred_labels": [s["pred"] for s in top_samples],
+                "concept_targets": torch.stack([s["concept_target"] for s in top_samples], dim=0),
+                "concept_preds": torch.stack([s["concept_pred"] for s in top_samples], dim=0),
+            }
+
+    return concept_eval, label_eval, examples, wrong_examples
 
 
 def main(args):
@@ -161,7 +198,7 @@ def main(args):
     label_epochs = args.label_epochs or train_cfg["training"]["epochs"]
     label_history = label_trainer.fit(label_epochs)
 
-    concept_eval, label_eval, examples = evaluate_cbm(
+    concept_eval, label_eval, examples, wrong_examples = evaluate_cbm(
         concept_model,
         label_model,
         val_loader,
@@ -191,6 +228,17 @@ def main(args):
                 concept_names=base_ds.concept_columns,
                 max_concepts=args.max_concepts,
                 save_path=out_dir / "example_predictions.png",
+            )
+        if wrong_examples is not None:
+            plot_example_predictions(
+                wrong_examples["images"],
+                true_labels=wrong_examples["true_labels"],
+                pred_labels=wrong_examples["pred_labels"],
+                concept_targets=wrong_examples["concept_targets"],
+                concept_preds=wrong_examples["concept_preds"],
+                concept_names=base_ds.concept_columns,
+                max_concepts=args.max_concepts,
+                save_path=out_dir / "wrong_predictions.png",
             )
 
         torch.save(concept_model.state_dict(), out_dir / "concept_predictor.pt")

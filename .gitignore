@@ -19,3 +19,6 @@ env/
 *.pth
 *.onnx
 artifacts/
+
+#tests and such
+configs/tests/

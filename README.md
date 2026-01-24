@@ -49,7 +49,8 @@ Flags:
 - `--threshold` set sigmoid cutoff for concept predictions (default 0.5).
 - `--epoch` override epochs from training config (default 30).
 
-Artifacts: model weights, training curves, and metrics are written to `--save-dir`
+## Artifacts: model weights, training curves, and metrics are written to `--save-dir`
+- pull artifacts through scp
 
 Current full run takes ca. 40 minutes; early stopping on epochs 22 and 14 respectively.
 

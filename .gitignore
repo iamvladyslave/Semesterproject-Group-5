@@ -21,4 +21,4 @@ env/
 artifacts/
 
 #tests and such
-config/tests/
+config/test/

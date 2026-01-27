@@ -38,6 +38,8 @@ class LabelTrainer:
     def _concepts(self, images):
         with torch.no_grad():
             logits = self.concept_predictor(images)
+            #Hier passiert glaube zweimal sigmoid da wir ja im CBM auch nochmal sigmoid machen
+            #Besser wäre direkt aus CBM auslesen denke ich
             probs = torch.sigmoid(logits)
             if self.binary_concepts:
                 probs = (probs >= self.threshold).float()

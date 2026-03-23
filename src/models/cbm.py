@@ -28,15 +28,40 @@ class LabelPredictor(nn.Module):
 
 
 class CBMModel(nn.Module):
-    #CBM Model bestehend aus Concept Predictor und Label Predictor
-    #binary_concepts: ob die Konzepte binär sind, binary_treshold: Schwellenwert für die Binarisierung der Konzepte
+    '''
+    Concept Bottleneck Model which consists of Concept Predictior and Label Predictor
+
+    '''
+
     def __init__(self, concept_predictor: nn.Module, label_predictor: nn.Module, binarization_threshold: float = 0.5):
+        '''
+        initializes cbm
+
+        Parameters
+        ----------
+        concept_predictor : nn.Module
+            predicts concept logits from input images.
+        label_predictor : nn.Module
+            predicts class logits from concept probs.
+        binarization_threshold : float, optional
+            binarizazion threshhold for concept probabilities into binary values.
+
+        '''
         super().__init__()
         self.concept_predictor = concept_predictor
         self.label_predictor = label_predictor
         self.binarization_threshold = binarization_threshold
     
     def forward(self, images):
+
+        '''
+        forward pass of cbm
+
+        Parameters
+        ----------
+        images : torch.Tensor
+            Input batch of images
+        '''
         #concept prediction
         concept_logits = self.concept_predictor(images)
         #concept activation

@@ -10,7 +10,22 @@ from torchvision import models
 
 @dataclass
 class ConceptBackboneConfig:
-    """Configuration for building the EfficientNetV2 backbone."""
+    """Configuration for building the EfficientNetV2 backbone.
+    parameters
+    ---------
+    name: str
+        name of the used effiecentnet model
+    pretrained: bool
+        if true use pretrained model
+    dropout: float
+        propapability with which a dropout is applied
+    freeze_backbone: bool
+        if true freeze the backbone during training
+    
+    examples
+    --------
+    >>>
+    """
 
     name: str = "efficientnet_v2_s"
     pretrained: bool = True
@@ -27,10 +42,21 @@ class ConceptPredictor(nn.Module):
     """
 
     def __init__(
+        
         self,
         num_concepts: int,
         backbone_cfg: Optional[ConceptBackboneConfig] = None,
     ):
+        '''
+        initialization of concept predictor
+        
+        Parameters
+        ----------
+        num_concepts: int
+            number of concepts to predict
+        backbone_cfg: ConceptBackboneConfig
+            config object for the backbone
+        '''
         super().__init__()
         self.num_concepts = num_concepts
         backbone_cfg = backbone_cfg or ConceptBackboneConfig()
@@ -41,6 +67,23 @@ class ConceptPredictor(nn.Module):
                 param.requires_grad = False
 
     def _build_backbone(self, cfg: ConceptBackboneConfig) -> nn.Module:
+        '''
+        builds and modifies EfficientNetV2 Backbone. Classifier is replaced with new head
+        to output logits
+
+        Parameters
+        ----------
+        cfg: ConceptBackboneConfig
+            Configuration for Backbone
+        Returns
+        -------
+        backbone: nn.Module
+            the modified EfficientNetV2 Backbone
+        
+        Examples
+        -------
+        >>>
+        '''
         weights = None
         if cfg.pretrained:
             # TorchVision API maps weights to enum types; fall back gracefully if unavailable.
@@ -68,4 +111,20 @@ class ConceptPredictor(nn.Module):
         return backbone
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        '''
+        forward pass through Concept Predicor
+        Parameters
+        ----------
+        x: torch.Tensor
+            tensor containing the images 
+
+        Returns
+        -------
+        torch.tensor
+            returns tensor containing concept logits
+
+        Examples
+        --------
+        >>>
+        '''
         return self.backbone(x)

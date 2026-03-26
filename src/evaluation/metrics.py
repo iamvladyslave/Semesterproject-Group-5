@@ -9,6 +9,30 @@ EPS = 1e-8
 
 
 def _counts(preds: torch.Tensor, targets: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    '''
+    computes True Positive, False Positve and False Negative
+
+    Parameters
+    ----------
+    preds: torch.Tensor
+        Binary Predictions of concepts
+    targets: torch.Tensor
+        Binary true labels of concepts
+
+    Returns
+    --------
+    tp: torch.Tensor
+        True Positives per concept
+    fp: torch.Tensor
+        False Positives per concept
+
+    fn: torch.Tensor
+        False Negatives Per concept
+    
+    Examples
+    --------
+    >>>
+    '''
     tp = ((preds == 1) & (targets == 1)).sum(dim=0)
     fp = ((preds == 1) & (targets == 0)).sum(dim=0)
     fn = ((preds == 0) & (targets == 1)).sum(dim=0)
@@ -21,8 +45,26 @@ def concept_metrics(
     threshold: float = 0.5,
 ) -> Dict[str, List[float]]:
     """
-    Compute per-concept accuracy, precision, recall, and F1.
-    Returns a dict with per-concept lists and macro averages.
+    Compute per-concept accuracy, precision, recall, F1 score,
+     macro average metrics, exact match accuracy
+    
+    Parameters
+    ----------
+    logits: torch.Tensor
+        raw logits with no activation applied
+    targets:  torch.Tensor
+        true labels of concepts
+    treshold: float
+        Binarization threshold of 0.5
+    
+    Returns
+    -------
+    dict   
+        Dictonary containing: per_concept_accuracy, per_concept_precision, per_concept_recall,
+        per_concept_f1, macro and exact_match
+    Examples
+    --------
+    >>>
     """
     preds = (torch.sigmoid(logits) >= threshold).int()
     targets = targets.int()
@@ -58,7 +100,27 @@ def label_metrics(
     num_classes: int,
 ) -> Dict[str, object]:
     """
-    Compute classification accuracy, per-class precision/recall/F1, and confusion matrix.
+    Compute classification accuracy, per-class precision/recall/F1, 
+    macro average metrics and confusion matrix.
+
+    Parameters
+    ----------
+    logits: torch.Tensor
+        raw logits with no activation applied
+    targets: torch.Tensor
+        true class labels
+    num_classes: int
+        Number of target classes
+    
+    Returns
+    -------
+    dict
+        Dictonary containing accuracy, per_class_precision, per_class_recall,
+        per_class_f1, confusion_matrix, macro
+
+    Examples
+    --------
+
     """
     preds = torch.argmax(logits, dim=1)
     targets = targets.long()

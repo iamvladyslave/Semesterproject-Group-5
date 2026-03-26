@@ -9,6 +9,26 @@ import matplotlib.pyplot as plt
 
 
 def plot_training_curves(history: Dict[str, List[float]], *, save_path: Optional[str] = None):
+    '''
+    plots training and validation curves for loss and accuracy
+
+    Parameters
+    ----------
+    history: Dict of str to List of float
+        directory containing training history
+    save_path: str or None
+        the path to save the generated plots to, if None plots are not safed
+    
+    Returns
+    -------
+    fig: matplotlib.figure.Figure
+        returns the generated figure
+    
+    Examples
+    --------
+    >>>
+    '''
+    
     fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 
     ax[0].plot(history.get("train_loss", []), label="Train")
@@ -46,6 +66,30 @@ def plot_confusion_matrix(
     normalize: bool = False,
     save_path: Optional[str] = None,
 ):
+    '''
+    plots a confusionmatrix for classification results
+
+    Parameters
+    ----------
+    cm: Sequence of Sequence of int
+        values of confusion matrix
+    class_names: str list or None
+        names of classes for axis labels
+    normalize: bool
+        if true then normalize values per row
+    save_path: str or None
+        the path to save the generated plot to, if None plot is not safed
+
+    Returns
+    -------
+    fig: matplotlib.figure.Figure
+        returns the generated figure
+
+    Examples
+    --------
+    >>>
+
+    '''
     cm = np.array(cm, dtype=float)
     if normalize:
         row_sums = cm.sum(axis=1, keepdims=True)
@@ -98,6 +142,40 @@ def plot_example_predictions(
     max_concepts: Optional[int] = None,
     save_path: Optional[str] = None,
 ):
+    '''
+    plot example prediction with corresponding concept activations
+
+    Parameters
+    ----------
+    images: torch.Tensor,
+        Batch of images
+    true_labels: int Sequence
+        true labels of classes
+    pred_labels: int Sequence
+        predicted labels of classes
+    concept_targets: torch.Tensor
+        true concept vectors
+    concept_preds: torch.Tensor
+        predicted concept vectors
+    concept_names: str List or None
+        names of concepts
+    class_names: str List or None
+        names of classes
+    max_concepts: int or None
+        max number of concepts to display per example
+    save_path: str or None
+        the path to save the generated plot to, if None plot is not safed
+    
+    Returns
+    -------
+    fig: matplotlib.figure.Figure
+        returns the generated figure
+    
+    Examples
+    --------
+    >>>
+
+    '''
     images = images.detach().cpu()
     concept_targets = concept_targets.detach().cpu()
     concept_preds = concept_preds.detach().cpu()
@@ -153,6 +231,29 @@ def plot_score_bars(
     max_items: Optional[int] = None,
     save_path: Optional[str] = None,
 ):
+    '''
+    plots horizontal bar chart of scores
+
+    Parameters:
+     scores : float Sequence
+        Scores to visualize
+    labels : str Sequence or None
+        corresponding labels to each score
+    title : str
+        title of plot
+    ylabel : str
+        label for score axis
+    sort_asc : bool
+        if true then sort in ascending order
+    max_items : int or None
+        max amount of items to display
+    save_path : str or None
+        path to save the plot to
+    
+    Returns:
+    fig: matplotlib.figure.Figure
+        returns the generated figure
+    '''
     scores_np = np.asarray(scores, dtype=float)
     n = scores_np.shape[0]
     if n == 0:
@@ -191,6 +292,27 @@ def plot_hamming_histogram(
     title: str = "Hamming Distance",
     save_path: Optional[str] = None,
 ):
+    '''
+    plots histogram of hamming distances between true and predicted concepts
+    currently not used
+
+    Parameters
+    ----------
+    distances: int Sequence
+        Hamming distances
+    title: str
+        name of plot
+    save_path: str or None
+        path to save the plot to
+    
+    Returns
+    -------
+    fig: matplotlib.figure.Figure
+        returns the generated figure
+    
+    Examples
+    --------
+    '''
     # distances_np = np.asarray(distances, dtype=int)
     # if distances_np.size == 0:
     #     return None

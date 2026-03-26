@@ -3,6 +3,41 @@ from typing import Dict
 
 @dataclass
 class DatasetConfig:
+    '''
+    configuration for dataset loading
+    name: str
+        name of dataset
+    root_dir: str
+        root directory containing data
+    test_root_dir: str
+        root directory for test data
+    train_csv: str
+        path to csv file contataining annotations used for training
+    val_csv: str
+        path to csv file contataining annotations used for training
+    test_csv: str
+        path to csv file contataining annotations used for testing
+    concepts_csv: str
+        path to csv file containing concept annotations
+    image_exts: str tuple
+        allowed image file extensions
+    image_size: int
+        size images are being resized to
+    val_split: float
+        which amount of data is split into validation set
+    test_split
+        which amount of data is split int test set
+    seed: int
+        random seed for dataset splitting
+    num_concepts: int
+        number of concepts in dataset
+    concept_cols: str list
+        names of columns in csv corresponding to concept labels
+    folder_to_label: int dict
+        mapping from folder indices to class labels
+
+    
+    '''
     name: str
     root_dir: str
     test_root_dir: str | None = None

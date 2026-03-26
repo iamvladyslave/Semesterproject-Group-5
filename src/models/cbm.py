@@ -3,7 +3,9 @@ import torch.nn as nn
 
 
 class LabelPredictor(nn.Module):
-
+    '''
+    label predictor for predicting class logits from concept probabitilities
+    '''
     def __init__(
         self,
         num_concepts: int,
@@ -11,6 +13,20 @@ class LabelPredictor(nn.Module):
         hidden_dims=(256, 128),
         dropout: float = 0.1,
     ):
+        '''
+        initilizazation of label predictor
+
+        Parameters
+        ----------
+        num_concepts: int
+            number of input concepts
+        num_classes: int
+            number of output classes
+        hidden_dims: int tuple
+            size of the hidden layers
+        dropout: float
+            propability with which a dropout is applied after each layer
+        '''
         super().__init__()
         layers = []
         in_dim = num_concepts
@@ -24,6 +40,21 @@ class LabelPredictor(nn.Module):
         self.net = nn.Sequential(*layers)
 
     def forward(self, concepts: torch.Tensor) -> torch.Tensor:
+        '''
+        forward pass trough label predictor
+        parameters
+        ----------
+        concepts: torch.Tensor
+            input tensor with the concepts 
+        returns
+        -------
+        torch.Tensor
+            output tensor with the class logits
+
+        examples
+        --------
+        >>>
+        '''
         return self.net(concepts)
 
 
@@ -44,7 +75,7 @@ class CBMModel(nn.Module):
         label_predictor : nn.Module
             predicts class logits from concept probs.
         binarization_threshold : float, optional
-            binarizazion threshhold for concept probabilities into binary values.
+            binarizazion threshold for concept probabilities into binary values.
 
         '''
         super().__init__()
@@ -55,12 +86,27 @@ class CBMModel(nn.Module):
     def forward(self, images):
 
         '''
-        forward pass of cbm
+        forward pass through cbm
 
         Parameters
         ----------
         images : torch.Tensor
             Input batch of images
+
+        Returns
+        -------
+        label_logits
+        class scores before softmax activation
+        label_probs
+        class probabilities after softmax activation
+        concept_probs
+        concept probabilites after sigmoid activation
+        concepts
+        binarized concept values before sigmoid activation
+
+        Examples
+        -------
+        >>>
         '''
         #concept prediction
         concept_logits = self.concept_predictor(images)

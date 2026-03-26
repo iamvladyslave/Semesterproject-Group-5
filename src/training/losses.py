@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+#verwenden wir das überhaupt???
+
 class Loss(nn.Module):
     def __init__(self):
         #initialize BCEWithLogitsLoss

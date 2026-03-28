@@ -48,6 +48,27 @@ class GTSRBConceptDataset(Dataset):
         concepts_name_col: str = "class_name",
         concept_columns: Optional[List[str]] = None,
     ):
+        '''
+        initializes the dataset
+
+        Parameters
+        ----------
+        root_dir : str or Path
+            Root directory containing data
+        concepts_csv : str or Path
+            path to concepts_csv containing annotations
+        transform : callable
+            transformation which may be applied
+        image_exts : str tuple
+            allowed image extansions
+        concepts_class_col : str
+            colum that contains class ID
+        concepts_name_col : str
+            column that contains class name
+        concept_columns : str list or None
+            list of columns to use as concept features 
+        '''
+        
         self.root_dir = Path(root_dir)
         self.transform = transform
         self.image_exts = tuple(e.lower() for e in image_exts)
@@ -110,9 +131,39 @@ class GTSRBConceptDataset(Dataset):
             raise KeyError(f"Concept vectors missing for class_id(s): {missing}")
 
     def __len__(self) -> int:
+        '''
+        computes number of samples in dataset
+
+        Returns
+        -------
+        int
+            number of samples in dataset
+        '''
         return len(self.samples)
 
     def __getitem__(self, idx: int):
+        '''
+        retrieve sample using index
+
+        Parameters
+        ----------
+        idx: int 
+            index of sample
+
+        Returns
+        -------
+        tuple with form image, (concept_vec, label_t)
+           
+            image: torch.Tensor
+                image in tensorform
+            concept_vec: torch.Tensor
+                binory concept vector in tensor form
+            label_t: torch.Tensor
+                class label in tensorform
+        
+        Examples
+        --------
+        '''
         path, label = self.samples[idx]
 
         with Image.open(path) as im:
@@ -127,12 +178,38 @@ class GTSRBConceptDataset(Dataset):
 
 
 def _infer_csv_sep(path: Path) -> str:
+    '''
+    infer the seperator used in the csv
+    Parameters
+    ----------
+    path: Path
+        path to csv file
+    
+    Returns: 
+        the inferred seperator ';' or ','
+
+    Examples
+    --------
+    '''
     with open(path, "r") as f:
         header = f.readline()
     return ";" if ";" in header else ","
 
 
 def _find_label_column(columns: List[str]) -> Optional[str]:
+    '''
+    find the label column in a list of columns in the csv
+
+    Parameters
+    ----------
+    columns: str List
+        list of columns
+    
+    Returns
+    -------
+    str or None
+        name of the found label column or None if not found
+    '''
     lower_map = {c.lower(): c for c in columns}
     for candidate in ("classid", "class_id", "label", "class"):
         if candidate in lower_map:
@@ -147,6 +224,29 @@ def _load_concept_vectors(
     concepts_name_col: str = "class_name",
     concept_columns: Optional[List[str]] = None,
 ):
+    '''
+    loads concept vectors from csv
+
+    Parameters
+    ----------
+    concepts_csv: str or Path
+        path to csv file
+    concepts_class_col: str
+        column name for class IDs
+    concepts_name_col: str
+        column name for class names
+    concept_columns: str List or None
+        columns to use as concepts
+
+    Returns
+    -------
+    concept_columns: str List
+        names of concept feature columns 
+    concept_by_label: Dict
+        mapping from class ID to binary concept vector tensor
+        
+
+    '''
     cdf = pd.read_csv(concepts_csv)
     if concepts_class_col not in cdf.columns:
         raise KeyError(f"Concepts CSV must have column '{concepts_class_col}'")
@@ -176,6 +276,26 @@ def _load_concept_columns(
     concepts_name_col: str = "class_name",
     concept_columns: Optional[List[str]] = None,
 ):
+    '''
+    loads concept columns names from csv file
+
+    Parameters
+    ---------
+    concepts_csv: str or Path
+        path to csv
+    concepts_class_col: str
+        column name for class IDs 
+    concepts_name_col: 
+        column name for class names
+    concept_columns: str List or None
+        columns to use as concepts
+
+    Returns
+    -------
+    concept_columns: str List
+        list of concept column names
+
+    '''
     cdf = pd.read_csv(concepts_csv)
     if concept_columns is None:
         drop = {concepts_class_col}
@@ -205,6 +325,38 @@ class GTSRBConceptCSVDataset(Dataset):
         label_col: Optional[str] = None,
         require_labels: bool = False,
     ):
+        '''
+        initializes dataset
+        Parameters
+        ----------
+
+        root_dir : str or Path
+            path to file contatining images
+        csv_path : str or Path
+            path to csv file
+        concepts_csv : str or Path
+
+
+
+
+
+            #Verstehe ich nicht 
+
+
+
+
+            
+        transform : callable, optional
+            Optional image transformation function.
+        image_exts : tuple of str, optional
+            Allowed image file extensions.
+        concept_columns : list of str or None, optional
+            Specific concept columns to use.
+        label_col : str or None, optional
+            Column name for labels (auto-detected if None).
+        require_labels : bool, optional
+            Whether to require label column in CSV.
+        '''
         self.root_dir = Path(root_dir)
         self.transform = transform
         self.image_exts = tuple(e.lower() for e in image_exts)

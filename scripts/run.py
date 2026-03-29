@@ -12,6 +12,9 @@ except ModuleNotFoundError:  # Allows running via python scripts/run.py
 
 
 def _train(args) -> None:
+    '''
+    run training flow for concept and label predictors
+    '''
     concept_epochs = args.epoch if args.epoch is not None else args.concept_epochs
     label_epochs = args.epoch if args.epoch is not None else args.label_epochs
     train_args = argparse.Namespace(
@@ -33,6 +36,9 @@ def _train(args) -> None:
 
 
 def _eval(args, concept_ckpt: Path, label_ckpt: Path) -> None:
+    '''
+    run evaluation flow for trained checkpoints
+    '''
     eval_args = argparse.Namespace(
         data_config=args.data_config,
         concept_ckpt=str(concept_ckpt),
@@ -51,6 +57,9 @@ def _eval(args, concept_ckpt: Path, label_ckpt: Path) -> None:
 
 
 def main() -> None:
+    '''
+    CLI entrypoint for combined training and evaluation
+    '''
     parser = argparse.ArgumentParser(
         description="Plug-and-play runner for CBM training + evaluation."
     )

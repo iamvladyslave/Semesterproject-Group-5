@@ -15,11 +15,17 @@ from src.evaluation.visualization import plot_training_curves
 
 
 def load_yaml(path: str | Path):
+    '''
+    loads yaml configuration from file
+    '''
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
 
 def _num_concepts(ds):
+    '''
+    extracts num_concepts from dataset or subset
+    '''
     if hasattr(ds, "num_concepts"):
         return ds.num_concepts
     if isinstance(ds, Subset):
@@ -28,6 +34,9 @@ def _num_concepts(ds):
 
 
 def main(args):
+    '''
+    CLI entrypoint for concept predictor training
+    '''
     data_cfg = load_yaml(args.data_config)
     train_cfg = load_yaml(args.training_config)
 

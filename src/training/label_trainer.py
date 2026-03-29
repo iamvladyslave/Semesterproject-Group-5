@@ -5,6 +5,9 @@ from .concept_trainer import EarlyStopping
 
 
 class LabelTrainer:
+    '''
+    trains label predictor using concepts from a frozen concept predictor
+    '''
     def __init__(
         self,
         concept_predictor,
@@ -18,6 +21,32 @@ class LabelTrainer:
         loss_fn=None,
         early_stopping=None,
     ):
+        '''
+        initializes label trainer
+
+        Parameters
+        ----------
+        concept_predictor: nn.Module
+            pretrained concept predictor used to extract concepts
+        label_predictor: nn.Module
+            label head to be trained
+        train_loader: DataLoader
+            dataloader for training
+        val_loader: DataLoader
+            dataloader for validation
+        optimizer: torch.optim.Optimizer
+            optimizer for label predictor
+        device: torch.device
+            device used for training
+        threshold: float
+            threshold for binarizing concepts
+        binary_concepts: bool
+            if true then binarize concept probabilities
+        loss_fn: nn.Module or None
+            loss function, defaults to CrossEntropyLoss
+        early_stopping: EarlyStopping or None
+            early stopping controller
+        '''
         self.concept_predictor = concept_predictor.to(device)
         self.label_predictor = label_predictor.to(device)
         self.train_loader = train_loader
@@ -36,6 +65,19 @@ class LabelTrainer:
             p.requires_grad = False
 
     def _concepts(self, images):
+        '''
+        extracts concept probabilities or binaries for a batch of images
+
+        Parameters
+        ----------
+        images: torch.Tensor
+            input images
+
+        Returns
+        -------
+        torch.Tensor
+            concept probabilities or binaries
+        '''
         with torch.no_grad():
             logits = self.concept_predictor(images)
             #Hier passiert glaube zweimal sigmoid da wir ja im CBM auch nochmal sigmoid machen
@@ -46,6 +88,23 @@ class LabelTrainer:
             return probs
 
     def train_epoch(self, dataloader, train=True):
+        '''
+        runs one epoch for training or validation
+
+        Parameters
+        ----------
+        dataloader: DataLoader
+            dataloader to iterate
+        train: bool
+            if true run in training mode
+
+        Returns
+        -------
+        avg_loss: float
+            average loss for epoch
+        acc: float
+            accuracy for epoch
+        '''
         if train:
             self.label_predictor.train()
         else:
@@ -78,6 +137,19 @@ class LabelTrainer:
         return avg_loss, acc
 
     def fit(self, epochs):
+        '''
+        trains label predictor for a number of epochs
+
+        Parameters
+        ----------
+        epochs: int
+            number of epochs
+
+        Returns
+        -------
+        dict
+            training history with losses and accuracies
+        '''
         for epoch in range(epochs):
             train_loss, train_acc = self.train_epoch(self.train_loader, train=True)
             val_loss, val_acc = self.train_epoch(self.val_loader, train=False)
@@ -107,5 +179,20 @@ class LabelTrainer:
 
     @torch.no_grad()
     def evaluate(self, dataloader=None):
+        '''
+        evaluates label predictor on given dataloader
+
+        Parameters
+        ----------
+        dataloader: DataLoader or None
+            dataloader to evaluate, uses val_loader if None
+
+        Returns
+        -------
+        avg_loss: float
+            average loss
+        acc: float
+            accuracy
+        '''
         dataloader = dataloader or self.val_loader
         return self.train_epoch(dataloader, train=False)

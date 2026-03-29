@@ -18,15 +18,24 @@ from src.training.label_trainer import LabelTrainer
 
 
 def load_yaml(path):
+    '''
+    loads yaml configuration from file
+    '''
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
 
 def _unwrap_dataset(ds):
+    '''
+    unwraps Subset to access base dataset
+    '''
     return ds.dataset if isinstance(ds, Subset) else ds
 
 
 def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, binary_concepts, max_examples):
+    '''
+    evaluates cbm and returns concept and label metrics plus example batches
+    '''
     concept_model.eval()
     label_model.eval()
 
@@ -129,6 +138,9 @@ def evaluate_cbm(concept_model, label_model, dataloader, device, threshold, bina
 
 
 def main(args):
+    '''
+    CLI entrypoint for cbm training
+    '''
     data_cfg = load_yaml(args.data_config)
     train_cfg = load_yaml(args.training_config)
 

@@ -12,9 +12,9 @@ class DatasetConfig:
     test_root_dir: str
         root directory for test data
     train_csv: str
-        path to csv file contataining annotations used for training
+        optional path to csv file contataining annotations for training
     val_csv: str
-        path to csv file contataining annotations used for training
+        optional path to csv file contataining annotations for validation
     test_csv: str
         path to csv file contataining annotations used for testing
     concepts_csv: str

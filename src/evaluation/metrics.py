@@ -54,7 +54,7 @@ def concept_metrics(
         raw logits with no activation applied
     targets:  torch.Tensor
         true labels of concepts
-    treshold: float
+    threshold: float
         Binarization threshold of 0.5
     
     Returns

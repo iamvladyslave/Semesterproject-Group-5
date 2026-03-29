@@ -22,7 +22,7 @@ def _make_transform(dataset_cfg: dict):
 
     Returns
     -------
-        transformed images on which preprocessing has been applied
+        transformation callable for preprocessing
 
     Examples
     --------

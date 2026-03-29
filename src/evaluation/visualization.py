@@ -15,7 +15,7 @@ def plot_training_curves(history: Dict[str, List[float]], *, save_path: Optional
     Parameters
     ----------
     history: Dict of str to List of float
-        directory containing training history
+        dict. containing training history
     save_path: str or None
         the path to save the generated plots to, if None plots are not safed
     
@@ -286,48 +286,3 @@ def plot_score_bars(
     return fig
 
 
-def plot_hamming_histogram(
-    distances: Sequence[int],
-    *,
-    title: str = "Hamming Distance",
-    save_path: Optional[str] = None,
-):
-    '''
-    plots histogram of hamming distances between true and predicted concepts
-    currently not used
-
-    Parameters
-    ----------
-    distances: int Sequence
-        Hamming distances
-    title: str
-        name of plot
-    save_path: str or None
-        path to save the plot to
-    
-    Returns
-    -------
-    fig: matplotlib.figure.Figure
-        returns the generated figure
-    
-    Examples
-    --------
-    '''
-    # distances_np = np.asarray(distances, dtype=int)
-    # if distances_np.size == 0:
-    #     return None
-    #
-    # max_dist = int(distances_np.max())
-    # bins = np.arange(max_dist + 2) - 0.5
-    # fig, ax = plt.subplots(figsize=(8, 4))
-    # ax.hist(distances_np, bins=bins, edgecolor="black")
-    # ax.set_xticks(range(max_dist + 1))
-    # ax.set_xlabel("Number of concept errors")
-    # ax.set_ylabel("Count")
-    # ax.set_title(title)
-    #
-    # plt.tight_layout()
-    # if save_path:
-    #     fig.savefig(save_path, bbox_inches="tight")
-    # return fig
-    return None

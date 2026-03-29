@@ -18,7 +18,6 @@ class GTSRBConceptDataset(Dataset):
           00000/  (class_id = 0)
             00000_00000.ppm
             ...
-            GT-00000.csv
           00001/
             ...
           ...
@@ -55,8 +54,8 @@ class GTSRBConceptDataset(Dataset):
         ----------
         root_dir : str or Path
             Root directory containing data
-        concepts_csv : str or Path
-            path to concepts_csv containing annotations
+    concepts_csv : str or Path
+        path to concepts_csv containing annotations
         transform : callable
             transformation which may be applied
         image_exts : str tuple
@@ -335,16 +334,7 @@ class GTSRBConceptCSVDataset(Dataset):
         csv_path : str or Path
             path to csv file
         concepts_csv : str or Path
-
-
-
-
-
-            #Verstehe ich nicht 
-
-
-
-
+            path to concepts csv file
             
         transform : callable, optional
             Optional image transformation function.

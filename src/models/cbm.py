@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class LabelPredictor(nn.Module):
     '''
-    label predictor for predicting class logits from concept probabitilities
+    label predictor for predicting class logits from concept values
     '''
     def __init__(
         self,
@@ -73,7 +73,7 @@ class CBMModel(nn.Module):
         concept_predictor : nn.Module
             predicts concept logits from input images.
         label_predictor : nn.Module
-            predicts class logits from concept probs.
+            predicts class logits from concept values.
         binarization_threshold : float, optional
             binarizazion threshold for concept probabilities into binary values.
 
@@ -102,7 +102,7 @@ class CBMModel(nn.Module):
         concept_probs
         concept probabilites after sigmoid activation
         concepts
-        binarized concept values before sigmoid activation
+        binarized concept values after sigmoid activation
 
         Examples
         -------

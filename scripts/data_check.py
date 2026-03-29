@@ -11,7 +11,7 @@ Purpose:
     basically task 1 in task sheet.
     sanity check for the datalaoding pipeline, verify setup
 
-    applies transforms as defined in config/data_config.yaml, returns:
+    applies transforms based on image_size in config/data_config.yaml, returns:
     - no of samples
     - no of concept features (K)
     - tensor shapes for a single batch

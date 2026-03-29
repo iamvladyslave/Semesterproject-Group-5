@@ -44,7 +44,7 @@ class ConceptTrainer:
     Trainer for the concept predictor head.
 
     Tracks loss and accuracy (per-concept and macro), supports early stopping,
-    and returns the best-performing model weights.
+    and loads the best-performing model weights.
     """
 
     def __init__(
